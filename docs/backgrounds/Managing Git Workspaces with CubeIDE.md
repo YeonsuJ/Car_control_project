@@ -5,10 +5,41 @@
 
 ## Cube IDE 환경 구축 및 토큰 생성, 적용
 
-### 환경 구축
+### 초기 환경 구축
 Git과 STM32CubeIDE를 연동하여 프로젝트 버전 관리를 원활하게 하기 위해 아래의 가이드를 참고하여 환경을 구성  
 ➡ 참고 블로그: https://m.blog.naver.com/musk95/221900982612  
 <br>
+
+```
+1. 로컬 c > 사용자 > jysjy > git 폴더 만들고 이동
+
+2. 여기서 git bash
+- git init
+- git clone https://github.com/YeonsuJ/Car_control_project.git
+- cd Car_control_project
+- git remote -v 	// 확인용
+- git fetch
+- for branch in $(git branch -r | grep -v '\->'); do
+  git branch --track "${branch#origin/}" "$branch"
+done
+- git checkout 원하는 브랜치
+
+3. ide에서 환경 구축 및 토큰 설정
+
+- git plugin 설치 (help > eclipse marketplace > egit 검색 > install > restart now클릭 후 cubeide 재시작
+
+- window > show view > other > git repositories, staging, history, debugger console 추가
+
+
+4. 프로젝트 새로 생성
+- 새 프로젝트 생성 > 경로를 git/Car_control_project > Unit_car_sensor 폴더 생성후 여기로 > 프로젝트명도 Unit_car_sensor로 동일하게
+
+- staging탭에서 아무것도 설정하지 않은 기본 프로젝트를 모든 파일을 staging > commit and push
+
+
+주의)
+!!! 삭제하기전에 git status로 staging 중인게 있는지 확인해야함 ( 삭제된 커밋까지 남기 때문에 지저분해짐) 
+```
 
 ### 인증 토큰 생성
 
