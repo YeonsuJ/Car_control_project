@@ -65,5 +65,6 @@ MCU로는 32bit cortex-m3, m4 기반의 stm32보드를 선정하였으며, 핸�
 
 ## 3. 다음주 목표
 - Git commands 학습 및 STM32CubeIDE 와 Git & Github 관리/연동, 버전관리법 학습
-- 시스템 아키텍처 v1.0 작성
-
+- 초음파센서 test
+- OLED test
+- tactile switch 제어
