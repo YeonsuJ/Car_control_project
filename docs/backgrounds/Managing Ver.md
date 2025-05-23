@@ -94,7 +94,7 @@ Unit_controller/
 
 | 커밋해시값 | 날짜         | 변경 내용 |
 |----------|--------------|-----------|
-| [`82d4624`](https://github.com/YeonsuJ/Car_control_project/commit/82d4624) | 2025-05-19     | - 버튼 입력 처리<br>- DC 모터 정/역 제어 |
+| [`82d4624`](https://github.com/YeonsuJ/Car_control_project/commit/82d462479a9bef4ad92decd2cc37d7a1186b770f) | 2025-05-19     | - 버튼 입력 처리<br>- DC 모터 정/역 제어 |
 | 49ewsp3 | 2025-06-02    | - 자이로 센서 기능 추가<br>- 자이로 기반 방향 제어 |
 
 
