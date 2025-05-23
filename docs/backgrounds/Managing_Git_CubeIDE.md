@@ -10,11 +10,10 @@ Git과 STM32CubeIDE를 연동하여 프로젝트 버전 관리를 원활하게 �
 ➡ 참고 블로그: https://m.blog.naver.com/musk95/221900982612  
 <br>
 
-```
-1. 로컬 c > 사용자 > jysjy > git 폴더 만들고 이동
 
-2. 여기서 git bash
-- git init
+1. 로컬 c > 사용자 > jysjy > git 폴더 만들고 이동
+~~~
+git bash 환경 명령어 사이클
 - git clone https://github.com/YeonsuJ/Car_control_project.git
 - cd Car_control_project
 - git remote -v 	// 확인용
@@ -23,7 +22,8 @@ Git과 STM32CubeIDE를 연동하여 프로젝트 버전 관리를 원활하게 �
   git branch --track "${branch#origin/}" "$branch"
 done
 - git checkout 원하는 브랜치
-
+~~~
+2. 파일 시스템 GUI를 통해 로컬 repo에서 .project 파일 실행 or CubeIDE에서 open 프로젝트 후 브라우징    
 3. ide에서 환경 구축 및 토큰 설정
 
 - git plugin 설치 (help > eclipse marketplace > egit 검색 > install > restart now클릭 후 cubeide 재시작
