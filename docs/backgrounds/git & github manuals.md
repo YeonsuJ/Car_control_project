@@ -33,7 +33,9 @@ ex) 문서 > car_control_project 폴더 생성
 
 6. 원격에서 내 로컬로 모든 브랜치 설정 전부 가져오기<br/>
 ```bash
-   for branch in $(git branch -r | grep -v '\->'); do git branch --track "${branch#origin/}" "$branch" done
+   for branch in $(git branch -r | grep -v '\->'); do
+  git branch --track "${branch#origin/}" "$branch"
+done
 ```
 
 ==================================================================================
