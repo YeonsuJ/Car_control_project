@@ -7,9 +7,10 @@
 4. 택트 스위치 test
 
 ## 2. 배경지식 정리 
--> [CubeIDE & git 연동 관리 가이드](docs/backgrounds/Managing_Git_CubeIDE.md)  
--> [버전 관리 가이드](docs/backgrounds/Managing_Ver.md)  
--> [git 명령어 가이드](docs/backgrounds/github_manuals.md)
+-> [CubeIDE & git 연동 관리 가이드](../backgrounds/Managing_Git_CubeIDE.md)  
+-> [버전 관리 가이드](../backgrounds/Managing_Ver.md)  
+-> [git 명령어 가이드](../backgrounds/github_manuals.md)<br>
+-> [HC-SR04 초음파센서 동작 원리](..backgroudns/Ultrasonic_sensor.md)
 
 
 ## 3. 소스코드 주요 사항
@@ -36,13 +37,15 @@ OLED 라이브러리의 기능에 관한 코드 설명은 추후 이 블록에 �
 
 ---
 ### 초음파 test
-
+기존 폴링방식으로 작성 -> Timer input caputure 기능 사용해서 구현함. 
 > 커밋 해시 [82d4624](https://github.com/YeonsuJ/Car_control_project/commit/82d462479a9bef4ad92decd2cc37d7a1186b770f)
 
 ---
 
-## 4. 하드웨어 배선도 및 회로도
-
+## 4. 하드웨어 연결도
+[스위치](../hardware_connections/tactile_switch.png)<br>
+[OLED](../hardware_connections/oled.png)<br>
+[초음파센서](../hardware_connections/ultrasonic.png)<br>
 
 ## 5. 다음주 목표
 - 자이로센싱값 -> OLED 모니터링 로직 구현
