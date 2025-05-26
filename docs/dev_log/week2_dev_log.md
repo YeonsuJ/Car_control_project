@@ -43,9 +43,9 @@ OLED 라이브러리의 기능에 관한 코드 설명은 추후 이 블록에 �
 ---
 
 ## 4. 하드웨어 연결도
-[스위치](docs/wiring_diagram/tactile_switch.png)<br>
-[OLED](docs/wiring_diagram/oled.png)<br>
-[초음파센서](docs/wiring_diagram/ultrasonic.png)<br>
+[스위치](../wiring_diagram/tactile_switch.png)<br>
+[OLED](../wiring_diagram/oled.png)<br>
+[초음파센서](../wiring_diagram/ultrasonic.png)<br>
 
 ## 5. 다음주 목표
 - 자이로센싱값 -> OLED 모니터링 로직 구현
