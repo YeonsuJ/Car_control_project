@@ -52,16 +52,24 @@ LED를 통한 PWM 신호 테스트 코드를 업로드
 
 ---
 
-오늘 한 일
+## Nucleo board 내장 ST-Link V2를 활용해서 F103 블랙필보드 디버깅하는 방법
 
-- CubeIDE 디버깅 환경 구축
-- `LED_Control_Polling` 프로그램
-- `LED_Control_Interrupt` 프로그램
+### 1-1. Nucleo f411re의 ST-Link와 stm32f103c8t6 블랙필보드 연결
 
----
+|ST-Link V2(SWD핀)|F103 BlackPill board|
+|:---:|:---:|
+|1st|3.3v|
+|2nd|clk|
+|3rd|Gnd|
+|4th|IO|
+|5th|reset|
 
-내일 할 일
+※ stlink의 점퍼핀 2개 제거함(CN2)
 
-- PWM 테스트 코드 작성
-- 자이로 센서 테스트 코드 작성
-- GitHub 실습
+### 1-2. stm32 programmers로 stlink와 mcu 연결 성공 확인
+
+### 1-3. stm32cube ide setup
+
+프로젝트생성 : board가 아닌 mcu에서 F103 검색
+
+embedded software packages manager에서 f1 패키지 install
