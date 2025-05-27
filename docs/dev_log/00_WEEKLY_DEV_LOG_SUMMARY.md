@@ -7,6 +7,8 @@
 
 > [아이디어 구상 및 부품 선정 과정](./Initial_Planning.md)
 
+---
+
 ## 2주차 (25-05-19 ~ 25-05-25)
 - Git commands 학습
 - Github을 활용한 버전관리법 학습
@@ -19,3 +21,12 @@
 > [Managing_Ver.md](./Managing_Ver.md)<br>
 > [Managing_Git_CubeIDE.md](./Managing_Git_CubeIDE.md)<br>
 > [Ultrasonic.md](./Ultrasonic.md)<br>
+
+---
+
+## 3주차 (25-05-26 ~ 25-06-01)
+- 자이로센싱값 -> OLED 모니터링 로직 구현
+- 스위치 눌림 시간 카운트(타이머 인터럽트 기반) -> OLED 모니터링 로직 구현
+- 배터리 잔량 측정 -> LCD 모니터링 로직 구현
+- 조도감지센서 test
+- 충격감지센서 test
