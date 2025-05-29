@@ -39,7 +39,28 @@ done
 
 주의)
 !!! 삭제하기전에 git status로 staging 중인게 있는지 확인해야함 ( 삭제된 커밋까지 남기 때문에 지저분해짐) 
-```
+
+---
+
+### push HEAD 이후 [rejected - non-fast-forward] 해결법
+ex) Unit_car_status 브랜치라고 가정
+
+->
+원격 브랜치(origin/Unit_car_status)가 이미 존재하고, 로컬 브랜치와 커밋 히스토리가 다르며,
+
+단순히 "앞으로 나아가기(fast-forward)"만으로는 병합이 안 될 때 발생함.
+
+즉, GitHub에 이미 Unit_car_status 브랜치가 존재하고, 로컬 브랜치 커밋이 그 브랜치 히스토리와 충돌하거나 선행되지 않는 상황임
+
+1. 최신 원격 브랜치 내용 먼저 받아오기 (rebase 방식 권장)
+
+git fetch origin
+
+git rebase origin/Unit_car_status
+
+git push origin Unit_car_status
+
+---
 
 ### 인증 토큰 생성
 
