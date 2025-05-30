@@ -55,10 +55,9 @@ volatile uint32_t distance = 0;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM4_Init(void);
+/* USER CODE BEGIN PFP */
 void delay_us(uint16_t us);
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim);
-/* USER CODE BEGIN PFP */
-
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -113,37 +112,6 @@ int main(void)
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
-}
-
-void delay_us(uint16_t us)
-{
-  __HAL_TIM_SET_COUNTER(&htim4, 0);
-  while (__HAL_TIM_GET_COUNTER(&htim4) < us);
-}
-
-void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
-{
-  if (htim->Instance == TIM4 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1)
-  {
-    if (is_first_captured == 0)
-    {
-      ic_val1 = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
-      __HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_FALLING);
-      is_first_captured = 1;
-    }
-    else
-    {
-      ic_val2 = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
-      __HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_RISING);
-      __HAL_TIM_DISABLE_IT(htim, TIM_IT_CC1);
-
-      uint32_t diff = (ic_val2 > ic_val1) ? (ic_val2 - ic_val1) : (0xFFFF - ic_val1 + ic_val2);
-      distance = (diff * 0.0343f) / 2.0f;
-      is_first_captured = 0;
-
-      __HAL_TIM_ENABLE_IT(htim, TIM_IT_CC1);
-    }
-  }
 }
 
 /**
@@ -251,7 +219,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9,GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : PA9 */
   GPIO_InitStruct.Pin = GPIO_PIN_9;
@@ -266,7 +234,36 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void delay_us(uint16_t us)
+{
+  __HAL_TIM_SET_COUNTER(&htim4, 0);
+  while (__HAL_TIM_GET_COUNTER(&htim4) < us);
+}
 
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
+{
+  if (htim->Instance == TIM4 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1)
+  {
+    if (is_first_captured == 0)
+    {
+      ic_val1 = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
+      __HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_FALLING);
+      is_first_captured = 1;
+    }
+    else
+    {
+      ic_val2 = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
+      __HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_RISING);
+      __HAL_TIM_DISABLE_IT(htim, TIM_IT_CC1);
+
+      uint32_t diff = (ic_val2 > ic_val1) ? (ic_val2 - ic_val1) : (0xFFFF - ic_val1 + ic_val2);
+      distance = (diff * 0.0343f) / 2.0f;
+      is_first_captured = 0;
+
+      __HAL_TIM_ENABLE_IT(htim, TIM_IT_CC1);
+    }
+  }
+}
 /* USER CODE END 4 */
 
 /**
