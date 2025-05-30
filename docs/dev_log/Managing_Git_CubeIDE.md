@@ -62,6 +62,27 @@ git push origin Unit_car_status
 
 ---
 
+### 실수로 push한 가장 마지막 commit 삭제
+
+ex) Unit_car_central 브랜치라고 가정
+
+1. 원하는 브랜치로 이동<br>
+-> git checkout Unit_car_central
+
+2. 커밋 이전으로 되돌리기<br>
+-> git reset --hard HEAD~1
+
+> HEAD~1: 마지막 커밋을 기준으로 한 단계 이전 상태로 이동<br>
+> --hard: 워킹 디렉토리와 스테이징 영역도 모두 초기화
+
+3. 로컬에도 반영<br>
+-> git push origin HEAD --force
+
+> --force: 원격 저장소(origin)에 강제로 푸시 → 주의: 협업 중일 경우 충돌 위험 있음
+
+
+---
+
 ### 인증 토큰 생성
 
 GitHub에서는 보안 강화를 위해 2021년부터 **패스워드 인증 방식 대신 Personal Access Token(PAT)**을 사용하도록 권장하고 있음.  
