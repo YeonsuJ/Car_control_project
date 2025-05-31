@@ -18,11 +18,15 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "i2c.h"
+#include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "fonts.h"
 #include "ssd1306.h"
+#include "mpu6050.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -41,16 +45,13 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-I2C_HandleTypeDef hi2c1;
 
 /* USER CODE BEGIN PV */
-
+MPU6050_t MPU6050;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
-static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -88,61 +89,53 @@ int main(void)
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_I2C1_Init();
+  	MX_GPIO_Init();
+	MX_I2C1_Init();
+	MX_I2C2_Init();
   /* USER CODE BEGIN 2 */
-  SSD1306_Init();
-    char snum[5];
-
-    SSD1306_GotoXY (0,0);
-    SSD1306_Puts ("NIZAR", &Font_11x18, 1);
-    SSD1306_GotoXY (0, 30);
-    SSD1306_Puts ("MOHIDEEN", &Font_11x18, 1);
-    SSD1306_UpdateScreen();
-    HAL_Delay (1000);
-
-    SSD1306_ScrollRight(0,7);
-    HAL_Delay(3000);
-    SSD1306_ScrollLeft(0,7);
-    HAL_Delay(3000);
-    SSD1306_Stopscroll();
-    SSD1306_Clear();
-    SSD1306_GotoXY (35,0);
-    SSD1306_Puts ("SCORE", &Font_11x18, 1);
+    SSD1306_Init();
+    while (MPU6050_Init(&hi2c2) == 1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-		for ( int x = 1; x <= 10000 ; x++ )
-		{
-			itoa(x, snum, 10);
-			SSD1306_GotoXY (0, 30);
-			SSD1306_Puts ("             ", &Font_16x26, 1);
-			SSD1306_UpdateScreen();
-			if(x < 10) {
-				SSD1306_GotoXY (53, 30);  // 1 DIGIT
-			}
-			else if (x < 100 ) {
-				SSD1306_GotoXY (45, 30);  // 2 DIGITS
-			}
-			else if (x < 1000 ) {
-				SSD1306_GotoXY (37, 30);  // 3 DIGITS
-			}
-			else {
-				SSD1306_GotoXY (30, 30);  // 4 DIGIS
-			}
-			SSD1306_Puts (snum, &Font_16x26, 1);
-			SSD1306_UpdateScreen();
-			HAL_Delay (500);
-		    }
+    while (1)
+    {
+        // MPU6050 모든 센서 데이터 읽기 (칼만 필터 포함)
+        MPU6050_Read_All(&hi2c2, &MPU6050);
+
+        // Roll 각도 출력 (Kalman 필터 적용된 값)
+        char buffer_roll[20];
+        snprintf(buffer_roll, sizeof(buffer_roll), "Roll: %.2f", MPU6050.KalmanAngleX);
+        SSD1306_GotoXY(0, 0);
+        SSD1306_Puts(buffer_roll, &Font_11x18, 1);
+
+//        // X축 출력
+//        char buffer_x[20];
+//        snprintf(buffer_x, sizeof(buffer_x), "X: %.2f", MPU6050.Gx);
+//        SSD1306_GotoXY(0, 0);
+//        SSD1306_Puts(buffer_x, &Font_11x18, 1);
+//
+//        // Y축 자이로 속도
+//        char buffer_y[20];
+//        snprintf(buffer_y, sizeof(buffer_y), "Gy: %.2f", MPU6050.Gy);
+//        SSD1306_GotoXY(0, 20);
+//        SSD1306_Puts(buffer_y, &Font_11x18, 1);
+//
+//        // Z축 자이로 속도
+//        char buffer_z[20];
+//        snprintf(buffer_z, sizeof(buffer_z), "Gz: %.2f", MPU6050.Gz);
+//        SSD1306_GotoXY(0, 40);
+//        SSD1306_Puts(buffer_z, &Font_11x18, 1);
+
+        SSD1306_UpdateScreen();
+        HAL_Delay(100);
+    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
-}
 
 /**
   * @brief System Clock Configuration
@@ -178,60 +171,6 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-}
-
-/**
-  * @brief I2C1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_I2C1_Init(void)
-{
-
-  /* USER CODE BEGIN I2C1_Init 0 */
-
-  /* USER CODE END I2C1_Init 0 */
-
-  /* USER CODE BEGIN I2C1_Init 1 */
-
-  /* USER CODE END I2C1_Init 1 */
-  hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 400000;
-  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
-  hi2c1.Init.OwnAddress1 = 0;
-  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-  hi2c1.Init.OwnAddress2 = 0;
-  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN I2C1_Init 2 */
-
-  /* USER CODE END I2C1_Init 2 */
-
-}
-
-/**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_GPIO_Init(void)
-{
-  /* USER CODE BEGIN MX_GPIO_Init_1 */
-
-  /* USER CODE END MX_GPIO_Init_1 */
-
-  /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
-
-  /* USER CODE BEGIN MX_GPIO_Init_2 */
-
-  /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
