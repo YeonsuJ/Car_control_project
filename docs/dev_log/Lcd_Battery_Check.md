@@ -23,6 +23,8 @@ STM32F103 보드의 ADC는 입력된 아날로그 전압을 기준 전압(Vref, 
 
 ## 🔌 하드웨어 연결
 
+<img src="../wiring_diagram/lcd_battery_check.png" alt="초음파센서 결선도" width="500"/>
+
 ### LCD 디스플레이
 
 datasheet를 통해 FT(five volt tolerant 핀 확인해야함)
