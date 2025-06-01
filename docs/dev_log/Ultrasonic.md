@@ -145,6 +145,8 @@ Timer input capture를 사용하면
 
 ### 3. 하드웨어 연결 및 CubeMX 설정
 
+<img src="../wiring_diagram/ultrasonic.png" alt="초음파센서 결선도" width="400"/>
+
 Timer Input Capture가 가능한 핀을 Echo에 연결 (PB6 선택)
 
 |초음파센서|F103보드|
@@ -165,8 +167,6 @@ PB6 → Alternate Function, Input Capture 모드
 NVIC → TIM4 global interrupt enable
 
 GPIOA9 → Output (TRIG)
-
-> [Ultrasonic_wiring_diagram](../wiring_diagram/ultrasonic.png)
 
 ### 4. 코드의 핵심 기능 요약
 
