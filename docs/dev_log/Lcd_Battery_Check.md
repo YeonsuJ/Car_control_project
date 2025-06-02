@@ -23,7 +23,7 @@ STM32F103 보드의 ADC는 입력된 아날로그 전압을 기준 전압(Vref, 
 
 ## 🔌 하드웨어 연결
 
-<img src="../wiring_diagram/lcd_battery_check.png" alt="초음파센서 결선도" width="500"/>
+<img src="../wiring_diagram/lcd_battery_check.png" alt="LCD 디스플레이 배터리 잔량 결선도" width="500"/>
 
 ### LCD 디스플레이
 
@@ -219,7 +219,7 @@ HAL_Delay(1000);
 ```
 
 > 참고링크 : https://www.micropeta.com/video57 <br>
-> 커밋 해시 [8bd32fd](https://github.com/YeonsuJ/Car_control_project/commit/8bd32fd9d1ee292344dcbc0b8382e334841c31ea)
+> 커밋 해시 [3cadc21](https://github.com/YeonsuJ/Car_control_project/commit/3cadc214babbb125b15034e2ebce0408e0c439cd)
 
 
 ---
