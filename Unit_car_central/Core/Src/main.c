@@ -97,11 +97,11 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  __HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_2, 550);	//중립
+	  __HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_2, 750);	// 1.5ms -> 중립
 	  HAL_Delay(1000);
-	  __HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_2, 330);	//우회전
+	  __HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_2, 550);	// 1.1ms -> 우회전
 	  HAL_Delay(1000);
-	  __HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_2, 730);	//좌회전
+	  __HAL_TIM_SET_COMPARE(&htim2,TIM_CHANNEL_2, 950);	// 1.9ms -> 좌회전
 	  HAL_Delay(1000);
     /* USER CODE END WHILE */
 
