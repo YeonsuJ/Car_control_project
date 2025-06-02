@@ -42,7 +42,7 @@ done
 
 ---
 
-### push HEAD 이후 [rejected - non-fast-forward] 해결법
+## push HEAD 이후 [rejected - non-fast-forward] 해결법
 ex) Unit_car_status 브랜치라고 가정
 
 ->
@@ -62,7 +62,7 @@ git push origin Unit_car_status
 
 ---
 
-### 실수로 push한 가장 마지막 commit 삭제
+## 실수로 push한 가장 마지막 commit 삭제
 
 ex) Unit_car_central 브랜치라고 가정
 
@@ -83,7 +83,7 @@ ex) Unit_car_central 브랜치라고 가정
 
 ---
 
-### 인증 토큰 생성
+## 인증 토큰 생성
 
 GitHub에서는 보안 강화를 위해 2021년부터 **패스워드 인증 방식 대신 Personal Access Token(PAT)**을 사용하도록 권장하고 있음.  
 STM32CubeIDE에서 GitHub와 연동하려면, GitHub 계정의 패스워드 대신 이 토큰을 사용하여 인증을 수행.
@@ -91,7 +91,7 @@ STM32CubeIDE에서 GitHub와 연동하려면, GitHub 계정의 패스워드 대�
 ➡ 토큰 생성 페이지: https://github.com/settings/tokens  
 <br>
 
-#### 토큰 생성 시 설정
+### 토큰 생성 시 설정
 
 - **Repository access**: All repositories 체크  
 - **Repository permissions**: 전체 항목 체크 (읽기/쓰기 권한 필요)  
@@ -99,7 +99,7 @@ STM32CubeIDE에서 GitHub와 연동하려면, GitHub 계정의 패스워드 대�
 - 일반적으로 read & write 권한을 부여해야 하지만, **읽기 전용 용도일 경우 read만 체크**  
 <br>
 
-#### 생성 후 사용 방법
+### 생성 후 사용 방법
 
 - 생성이 완료되면 토큰 문자열이 제공됨 → **복사해둘 것 (다시 볼 수 없음)**  
 - STM32CubeIDE에서 Git 기능 사용 시 로그인 창이 뜨면,  
@@ -108,6 +108,28 @@ STM32CubeIDE에서 GitHub와 연동하려면, GitHub 계정의 패스워드 대�
 <br>
 
 이 과정을 통해 GitHub 저장소에 안전하게 접근하고, CubeIDE 내부에서 **Push, Pull, Clone 등의 Git 기능을 직접 사용할 수 있음.**
+
+---
+## IDE에서 브랜치 switching 간 .settings/language.settings.xml 변경사항으로 인한 잦은 충돌 발생
+```bash
+git checkout 브랜치
+git rm -r --cached .settings/
+git commit -m "Ignore .settings folder (IDE-specific configs)"
+git push origin 브랜치
+```
+
+📁 .settings/ 폴더의 내용과 역할
+|파일/폴더|역할|Git 관리 필요 여부|
+|---|---|---|
+|language.settings.xml|컴파일러 자동 인식 설정 (환경 해시, include path 등)|❌ 무시 추천|
+|기타 XML 설정들|UI 환경, 에디터 보기 설정 등|❌ 무시 추천|
+|일반적으로 포함되는 설정들|org.eclipse.core.resources.prefs 등 Eclipse 내부 설정|❌ 무시 추천|
+
+→ 모두 개발자 환경마다 달라지는 개인 설정이므로 공유할 필요 없음.
+
+.settings/ 폴더 전체를 .gitignore에 추가하여 무시해도 대부분의 경우 문제 없음<br>
+이는 STM32CubeIDE (Eclipse 기반 IDE)에서 개발자 개인 설정 파일들이 들어 있는 폴더로, 
+팀 협업이나 버전 관리를 위한 커밋에는 불필요함
 
 ---
 
