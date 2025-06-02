@@ -26,8 +26,8 @@
 <br>
 MG996R 서보모터는 안정적인 동작을 위해 4.8V~7.2V의 전압이 요구된다. 그러나 STM32 보드의 5V 핀은 전류 공급 능력이 500mA 이하로 제한되어 있어, 부하가 걸릴 경우 순간적으로 최대 2.5A까지 전류를 요구하는 MG996R에 충분한 전력을 공급하기 어렵다. 이에 따라, VCC와 GND는 배터리에서 스텝다운 컨버터를 통해 5V로 강압한 외부 전원에 연결하여 안정적인 전원 공급이 가능하도록 구성하였다.
 
-<br>
-
+<br><br>
+### 연결
 |MG996R|외부 전원|F446RE 보드|
 |:---:|:---:|:---:|
 |Vcc|+5V|-|
@@ -98,7 +98,7 @@ $$
 듀티비란, PWM(펄스 폭 변조, Pulse Width Modulation) 신호에서 하나의 주기 동안 신호가 High 상태로 유지되는 비율을 뜻하며, 백분율(%)로 다음과 같이 계산한다.
 
 $$
-듀티 비(\%) = \frac{High상태시간}{전체주기시간} \times 100
+듀티 비(percent) = \frac{High상태시간}{전체주기시간} \times 100
 $$
 
 - 듀티비가 높다 -> High 상태가 더 길다 -> 서보가 더 많이 회전
@@ -145,7 +145,7 @@ while (1)
 : https://m.blog.naver.com/compass1111/221163124212<br>
 : https://m.blog.naver.com/emperonics/221725399383<br>
 <br>
-> 커밋 해시 : [5a98f15](https://github.com/YeonsuJ/Car_control_project/commit/5a98f15fcaf7b8b2b6cbc164c3750759f83637fc)
+> 커밋 해시 : [1d18eda](https://github.com/YeonsuJ/Car_control_project/commit/1d18eda88c05c9aac707a6153e64591776d5ae05)
 
 
 ---
