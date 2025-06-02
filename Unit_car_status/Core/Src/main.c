@@ -23,7 +23,6 @@
 /* USER CODE BEGIN Includes */
 #include "liquidcrystal_i2c.h"
 #include <stdio.h>
-#define ADC_CORRECTION 1.012861736334405f;  // 수치 보정을 위한 보정계수(3.15V 실제 → 3.11V 측정)
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -64,6 +63,8 @@ static void MX_I2C1_Init(void);
 // --- adc 전압출력 및 배터리 전압 → 퍼센트 계산 함수 ---
 float Read_Battery_Percentage(float* vout_ret)
 {
+	float correction = 3.15/3.11f; // 수치 보정을 위한 보정계수(멀티미터 측정 : 3.15V -> ADC 3.11V 출력)
+
 	HAL_ADC_Start(&hadc1);
 	HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
 	uint16_t adc_val = HAL_ADC_GetValue(&hadc1);
@@ -73,13 +74,14 @@ float Read_Battery_Percentage(float* vout_ret)
 	float vout_raw = (3.3f * adc_val) / 4095.0f;
 
 	// 2. 보정 계수 적용
-	float vout = vout_raw * ADC_CORRECTION;
+	float vout = vout_raw * correction;
+;
 
-	// 3. Vout → Vbat
-	float vbat = vout * 3.941f; // 분압비 반영 (6.8/(20+6.8)=3.941)
+	// 3. Vout → Vbat (실측 저항값 반영)
+	float vbat = vout * ((19.7f + 6.73f) / 6.73f);  // ≈ 3.9272
 
 	// 4. Vbat → 퍼센트 계산
-	float percent = ((vbat - 9.0f) / (12.6f - 9.0f)) * 100.0f;
+	float percent = ((vbat - 9.6f) / (12.6f - 9.6f)) * 100.0f;
 
 	if (percent > 100.0f) percent = 100.0f;
 	if (percent < 0.0f) percent = 0.0f;
@@ -140,8 +142,10 @@ int main(void)
 	float vout = 0.0f;
 	float percent = Read_Battery_Percentage(&vout);
 
-	snprintf(line1, sizeof(line1), "Battery: %2.0f%%", percent);
-	snprintf(line2, sizeof(line2), "Vin: %.2f V", vout);
+	uint8_t display_percent = (uint8_t)(percent + 0.5f);  // 소수점 반올림
+	snprintf(line1, sizeof(line1), "Battery: %3d%%", display_percent);
+
+	snprintf(line2, sizeof(line2), "Voltage: %.2f V", vout);
 
 	HD44780_Clear();
 	HD44780_SetCursor(0, 0);
