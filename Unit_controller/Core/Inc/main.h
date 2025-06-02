@@ -57,6 +57,16 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define Servo_Out_Pin GPIO_PIN_2
+#define Servo_Out_GPIO_Port GPIOA
+#define Gyro_SCL_Pin GPIO_PIN_10
+#define Gyro_SCL_GPIO_Port GPIOB
+#define Gyro_SDA_Pin GPIO_PIN_11
+#define Gyro_SDA_GPIO_Port GPIOB
+#define OLED_SCL_Pin GPIO_PIN_6
+#define OLED_SCL_GPIO_Port GPIOB
+#define OLED_SDA_Pin GPIO_PIN_7
+#define OLED_SDA_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

@@ -107,26 +107,24 @@ int main(void)
         MPU6050_Read_All(&hi2c2, &MPU6050);
 
         // Roll 각도 OLED 출력
-//        char buffer_roll[20];
-//        snprintf(buffer_roll, sizeof(buffer_roll), "Roll: %.2f", MPU6050.KalmanAngleX);
-//        SSD1306_GotoXY(0, 0);
-//        SSD1306_Puts(buffer_roll, &Font_11x18, 1);
-//        SSD1306_UpdateScreen();
+        char buffer_roll[20];
+        snprintf(buffer_roll, sizeof(buffer_roll), "Roll: %.2f", MPU6050.KalmanAngleX);
+        SSD1306_GotoXY(0, 0);
+        SSD1306_Puts(buffer_roll, &Font_11x18, 1);
+        SSD1306_UpdateScreen();
 
-        // Roll 값 매핑 (roll: -90 ~ +90 → angle: 0 ~ 180)
+        // Roll 값 (-90 ~ 90)
         float roll = MPU6050.KalmanAngleX;
-
-        // 안전 범위로 클램핑
         if (roll < -90.0f) roll = -90.0f;
-        if (roll > 90.0f)  roll = 90.0f;
+        if (roll >  90.0f) roll = 90.0f;
 
-        // Roll (-90 ~ 90) → angle (0 ~ 180)
+        // 각도 0 ~ 180으로 변환
         float angle = roll + 90.0f;
 
-        // angle (0 ~ 180) → pwm (330 ~ 730)
-        uint16_t pwm = (uint16_t)(330 + (angle / 180.0f) * 400.0f);
+        // angle 0~180 → PWM 500~2500으로 매핑
+        uint16_t pwm = (uint16_t)(500 + (angle / 180.0f) * 2000.0f);
 
-        // PWM 설정
+        // PWM 출력
         __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, pwm);
     	HAL_Delay(100);
     /* USER CODE END WHILE */
@@ -148,10 +146,13 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -161,12 +162,12 @@ void SystemClock_Config(void)
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
     Error_Handler();
   }
