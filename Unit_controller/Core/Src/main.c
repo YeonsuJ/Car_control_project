@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "i2c.h"
+#include "tim.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -26,7 +27,6 @@
 #include "fonts.h"
 #include "ssd1306.h"
 #include "mpu6050.h"
-
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -89,53 +89,52 @@ int main(void)
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
-  	MX_GPIO_Init();
-	MX_I2C1_Init();
-	MX_I2C2_Init();
+  MX_GPIO_Init();
+  MX_I2C1_Init();
+  MX_I2C2_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
     SSD1306_Init();
     while (MPU6050_Init(&hi2c2) == 1);
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
     while (1)
     {
-        // MPU6050 모든 센서 데이터 읽기 (칼만 필터 포함)
+        // 자이로 센서 데이터 읽기
         MPU6050_Read_All(&hi2c2, &MPU6050);
 
-        // Roll 각도 출력 (Kalman 필터 적용된 값)
-        char buffer_roll[20];
-        snprintf(buffer_roll, sizeof(buffer_roll), "Roll: %.2f", MPU6050.KalmanAngleX);
-        SSD1306_GotoXY(0, 0);
-        SSD1306_Puts(buffer_roll, &Font_11x18, 1);
-
-//        // X축 출력
-//        char buffer_x[20];
-//        snprintf(buffer_x, sizeof(buffer_x), "X: %.2f", MPU6050.Gx);
+        // Roll 각도 OLED 출력
+//        char buffer_roll[20];
+//        snprintf(buffer_roll, sizeof(buffer_roll), "Roll: %.2f", MPU6050.KalmanAngleX);
 //        SSD1306_GotoXY(0, 0);
-//        SSD1306_Puts(buffer_x, &Font_11x18, 1);
-//
-//        // Y축 자이로 속도
-//        char buffer_y[20];
-//        snprintf(buffer_y, sizeof(buffer_y), "Gy: %.2f", MPU6050.Gy);
-//        SSD1306_GotoXY(0, 20);
-//        SSD1306_Puts(buffer_y, &Font_11x18, 1);
-//
-//        // Z축 자이로 속도
-//        char buffer_z[20];
-//        snprintf(buffer_z, sizeof(buffer_z), "Gz: %.2f", MPU6050.Gz);
-//        SSD1306_GotoXY(0, 40);
-//        SSD1306_Puts(buffer_z, &Font_11x18, 1);
+//        SSD1306_Puts(buffer_roll, &Font_11x18, 1);
+//        SSD1306_UpdateScreen();
 
-        SSD1306_UpdateScreen();
-        HAL_Delay(100);
-    }
+        // Roll 값 매핑 (roll: -90 ~ +90 → angle: 0 ~ 180)
+        float roll = MPU6050.KalmanAngleX;
+
+        // 안전 범위로 클램핑
+        if (roll < -90.0f) roll = -90.0f;
+        if (roll > 90.0f)  roll = 90.0f;
+
+        // Roll (-90 ~ 90) → angle (0 ~ 180)
+        float angle = roll + 90.0f;
+
+        // angle (0 ~ 180) → pwm (330 ~ 730)
+        uint16_t pwm = (uint16_t)(330 + (angle / 180.0f) * 400.0f);
+
+        // PWM 설정
+        __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, pwm);
+    	HAL_Delay(100);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  }
+ }
   /* USER CODE END 3 */
+}
 
 /**
   * @brief System Clock Configuration
