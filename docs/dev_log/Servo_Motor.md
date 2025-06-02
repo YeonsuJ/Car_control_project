@@ -144,9 +144,7 @@ while (1)
 : https://www.micropeta.com/video102<br>
 : https://m.blog.naver.com/compass1111/221163124212<br>
 : https://m.blog.naver.com/emperonics/221725399383<br>
-<br>
-> 커밋 해시 : [1d18eda](https://github.com/YeonsuJ/Car_control_project/commit/1d18eda88c05c9aac707a6153e64591776d5ae05)
-
+> 커밋 해시 [1d18eda](https://github.com/YeonsuJ/Car_control_project/commit/1d18eda88c05c9aac707a6153e64591776d5ae05)
 
 ---
 
