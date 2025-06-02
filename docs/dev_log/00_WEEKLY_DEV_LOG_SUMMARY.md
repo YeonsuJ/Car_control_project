@@ -11,7 +11,7 @@
 |Git commands 학습|[Github_Manuals.md](./Github_Manuals.md)|-|
 |Github을 활용한 버전관리법 학습|[Managing_Ver.md](./Managing_Ver.md)|-|
 |STM32CubeIDE와 Git & Github 관리/연동|[Managing_Git_CubeIDE.md](./Managing_Git_CubeIDE.md)|-|
-|폴링방식 기반 -> 인터럽트 기반 타이머 인풋 캡쳐 활용 초음파센서 거리값 출력 로직 구현 |[Ultrasonic.md](./Ultrasonic.md)|[82d4624](https://github.com/YeonsuJ/Car_control_project/commit/82d462479a9bef4ad92decd2cc37d7a1186b770f)|
+|폴링방식 기반 -> 인터럽트 기반 타이머 인풋 캡쳐 활용 초음파센서 거리값 출력 로직 구현 |[Ultrasonic.md](./Ultrasonic.md)|[7165ee7](https://github.com/YeonsuJ/Car_control_project/commit/7165ee7f55b6ba93f8e09380047e063f922466cb)|
 
 ---
 ## 3주차 (25-05-26 ~ 25-06-01)
