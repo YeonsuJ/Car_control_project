@@ -207,7 +207,6 @@ TRIG_PIN (GPIOA PIN9)을 10μs 동안 HIGH로 설정하여 초음파 발사 신�
 ```
 ※ 여기서 0.0343f는 음속 343 m/s를 μs 단위로 변환한 값 (cm/μs)
 
-> 커밋 해시 [82d4624](https://github.com/YeonsuJ/Car_control_project/commit/82d462479a9bef4ad92decd2cc37d7a1186b770f)
 
 ---
 
