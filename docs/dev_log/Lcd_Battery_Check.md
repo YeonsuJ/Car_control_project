@@ -219,7 +219,6 @@ HAL_Delay(1000);
 ```
 
 > 참고링크 : https://www.micropeta.com/video57 <br>
-> 커밋 해시 [3cadc21](https://github.com/YeonsuJ/Car_control_project/commit/3cadc214babbb125b15034e2ebce0408e0c439cd)
 
 
 ---
