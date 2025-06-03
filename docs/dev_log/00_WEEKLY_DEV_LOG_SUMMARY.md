@@ -17,9 +17,8 @@
 ## 3주차 (25-05-26 ~ 25-06-01)
 |내용|문서 링크|커밋해시|
 |---|---|:---:|
-|자이로센싱값 -> OLED 모니터링 로직 구현|[Gyro_Display.md](./Gyro_Display.md)|
-|스위치 눌림 시간 카운트(타이머 인터럽트 기반) -> OLED 모니터링 로직 구현||
+|자이로센싱값 -> OLED 모니터링 로직 구현|[Gyro_Display.md](./Gyro_Display.md)|[229aaa8](https://github.com/YeonsuJ/Car_control_project/commit/229aaa8b4e313b1294b8de80c3d619d1e4bc61c4)|
 |배터리 잔량 측정 -> LCD 모니터링 로직 구현|[Lcd_Battery_Check.md](./Lcd_Battery_Check.md)|[3cadc21](https://github.com/YeonsuJ/Car_control_project/commit/3cadc214babbb125b15034e2ebce0408e0c439cd)|
-|서보모터 PWM 듀티비 기반 조향 각도 매핑 및 좌/우 조향 한계각 보정|[Servo_Motor.md](./Servo_Motor.md)|[1d18eda](https://github.com/YeonsuJ/Car_control_project/commit/1d18eda88c05c9aac707a6153e64591776d5ae05)
-|
+|서보모터 PWM 듀티비 기반 조향 각도 매핑 및 좌/우 조향 한계각 보정|[Servo_Motor.md](./Servo_Motor.md)|[1d18eda](https://github.com/YeonsuJ/Car_control_project/commit/1d18eda88c05c9aac707a6153e64591776d5ae05)|
+|자이로 roll 값 -> 서보모터 구|[Servo_Motor.md](./Servo_Motor.md)|[7dc0c12](https://github.com/YeonsuJ/Car_control_project/commit/7dc0c1298043c86b4969e85140554ca7ac16d90a)|
 ---
