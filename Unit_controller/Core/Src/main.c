@@ -48,6 +48,19 @@
 
 /* USER CODE BEGIN PV */
 MPU6050_t MPU6050;
+
+volatile uint8_t accel_pressed = 0;
+volatile uint8_t brake_pressed = 0;
+volatile uint32_t accel_count = 0;   // 20ms 단위
+volatile uint32_t brake_count = 0;   // 20ms 단위
+
+volatile uint32_t prev_tick_accel = 0;
+volatile uint32_t prev_tick_brake = 0;
+
+uint32_t previousMillis = 0;
+uint32_t currentMillis = 0;
+uint32_t counterOutside = 0; //For testing only
+uint32_t counterInside = 0; //For testing only
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -94,39 +107,40 @@ int main(void)
   MX_I2C2_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-    SSD1306_Init();
-    while (MPU6050_Init(&hi2c2) == 1);
-    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
+  SSD1306_Init();
+//    while (MPU6050_Init(&hi2c2) == 1);
+//    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
+    HAL_TIM_Base_Start_IT(&htim2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
     while (1)
     {
-        // 자이로 센서 데이터 읽기
-        MPU6050_Read_All(&hi2c2, &MPU6050);
-
-        // Roll 각도 OLED 출력
-        char buffer_roll[20];
-        snprintf(buffer_roll, sizeof(buffer_roll), "Roll: %.2f", MPU6050.KalmanAngleX);
-        SSD1306_GotoXY(0, 0);
-        SSD1306_Puts(buffer_roll, &Font_11x18, 1);
-        SSD1306_UpdateScreen();
-
-        // Roll 값 (-90 ~ 90)
-        float roll = MPU6050.KalmanAngleX;
-        if (roll < -90.0f) roll = -90.0f;
-        if (roll >  90.0f) roll = 90.0f;
-
-        // 각도 0 ~ 180으로 변환
-        float angle = roll + 90.0f;
-
-        // angle 0~180 → PWM 500~2500으로 매핑
-        uint16_t pwm = (uint16_t)(500 + (angle / 180.0f) * 2000.0f);
-
-        // PWM 출력
-        __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, pwm);
-    	HAL_Delay(100);
+//        // 자이로 센서 데이터 읽기
+//        MPU6050_Read_All(&hi2c2, &MPU6050);
+//
+//        // Roll 각도 OLED 출력
+//        char buffer_roll[20];
+//        snprintf(buffer_roll, sizeof(buffer_roll), "Roll: %.2f", MPU6050.KalmanAngleX);
+//        SSD1306_GotoXY(0, 0);
+//        SSD1306_Puts(buffer_roll, &Font_11x18, 1);
+//        SSD1306_UpdateScreen();
+//
+//        // Roll 값 (-90 ~ 90)
+//        float roll = MPU6050.KalmanAngleX;
+//        if (roll < -90.0f) roll = -90.0f;
+//        if (roll >  90.0f) roll = 90.0f;
+//
+//        // 각도 0 ~ 180으로 변환
+//        float angle = roll + 90.0f;
+//
+//        // angle 0~180 → PWM 500~2500으로 매핑
+//        uint16_t pwm = (uint16_t)(500 + (angle / 180.0f) * 2000.0f);
+//
+//        // PWM 출력
+//        __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, pwm);
+//    	HAL_Delay(100);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -174,7 +188,83 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+    uint32_t now = HAL_GetTick();
 
+    if (GPIO_Pin == GPIO_PIN_0)  // Accel 버튼
+    {
+        if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_RESET)
+        {
+            // 눌림이 감지된 순간(하강), 디바운싱 여부와 상관없이 초기화
+            accel_pressed = 1;
+            accel_count = 0;
+            prev_tick_accel = now;
+        }
+        else
+        {
+            // 떼짐(상승)은 즉시 pressed=0 처리
+            accel_pressed = 0;
+            prev_tick_accel = now;
+        }
+    }
+    else if (GPIO_Pin == GPIO_PIN_1)  // Brake 버튼
+    {
+        if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1) == GPIO_PIN_RESET)
+        {
+            // 눌림이 감지된 순간(하강), 디바운싱 여부와 상관없이 초기화
+            brake_pressed = 1;
+            brake_count = 0;
+            prev_tick_brake = now;
+        }
+        else
+        {
+            // 떼짐(상승)은 즉시 pressed=0 처리
+            brake_pressed = 0;
+            prev_tick_brake = now;
+        }
+    }
+}
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+    if (htim->Instance == TIM2) // 20ms 주기 타이머
+    {
+        if (accel_pressed) accel_count++;
+        if (brake_pressed) brake_count++;
+
+        char buffer1[20], buffer2[20];
+
+        snprintf(buffer1, sizeof(buffer1), "ACC: %lums", accel_count * 20);
+        SSD1306_GotoXY(0, 0);
+        SSD1306_Puts(buffer1, &Font_11x18, 1);
+
+        snprintf(buffer2, sizeof(buffer2), "BRK: %lums", brake_count * 20);
+        SSD1306_GotoXY(0, 20);
+        SSD1306_Puts(buffer2, &Font_11x18, 1);
+
+        SSD1306_UpdateScreen();
+    }
+}
+
+//void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+//{
+//  counterOutside++; //For testing only
+//  currentMillis = HAL_GetTick();
+//  if (GPIO_Pin == GPIO_PIN_0 && (currentMillis - previousMillis > 10))
+//  {
+//    counterInside++; //For testing only
+//    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_0);
+//    previousMillis = currentMillis;
+//  }
+//
+//  if (GPIO_Pin == GPIO_PIN_1 && (currentMillis - previousMillis > 10))
+//  {
+//    counterInside++; //For testing only
+//    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_1);
+//    previousMillis = currentMillis;
+//  }
+//}
 /* USER CODE END 4 */
 
 /**
