@@ -56,10 +56,11 @@ Configuration → Parameter Settings →
 - Counter Period : 10000-1
 
 ### 1. PWM 주기 계산
-- 서보모터가 요구하는 PWM 주기(20ms)를 맞추기 위해 타이머 클럭과 Prescaler, Counter Period의 값을 조합하여 계산하며, 공식은 다음과 같다.
-$$
-PWM 주기 (T) = \frac{(Counter Period + 1) \times (Prescaler + 1)}{TimerClock(Hz)}
-$$
+- 서보모터가 요구하는 PWM 주기(20ms)를 맞추기 위해 타이머 클럭과 Prescaler, Counter Period의 값을 조합하여 계산하며, 공식은 다음과 같다.<br>
+
+```latex
+PWM 주기 (T) = ((Counter Period + 1) × (Prescaler + 1)) / Timer Clock(Hz)
+```
 
 #### 타이머 클럭(Hz) 계산 
 - STM32F446RE의 기본 HCLK 기준 시스템 클럭 : 180MHz<br>
@@ -67,39 +68,39 @@ $$
 - APB1 Prescaler가 /4이기 때문에 
     - TIM2 클럭 = 180MHz /4 * 2 = 90MHz가 된다.
 
-#### Timer tick 시간 계산
-$$
-Tick 시간 = \frac{1}{90MHz}\times {180MHz} = 2μs
-$$
+#### Timer tick 시간 계산 (Prescaler 적용한 타이머 주기 기준)
+```latex
+Tick 시간(μs) = 1 / (90MHz ÷ 180) = 2μs
+```
+
 즉, 타이머 하나의 카운트가 2마이크로초(2μs)가 된다.
 
 따라서 
-$$
-PWM 주기 (T) = \frac{(10000 -1 + 1) \times (180-1+1)}{90 ,000 ,000}=\frac{1,800,000}{90,000,000}=0.02sec = 20ms
-$$
-
-$$
-= {(Counter Period + 1)}\times{Tick 시간} = 10,000 \times 2μs = 20ms
-$$
+```latex
+PWM 주기 (T) = {(10000 -1 + 1) × (180-1+1)}/ 90,000,000 = 1,800,000 / 90,000,000 = 0.02sec = 20ms
+             = (Counter Period + 1) × Tick 시간 = 10,000 × 2μs = 20ms
+```
 
 ### 2. PWM 주파수 계산
-$$
-주파수(f) = \frac{1}{주기(T)}=\frac{1}{20ms}=50Hz
-$$
+```latex
+주파수(f) = 1 / 주기(T) = 1 / 20ms =50Hz
+```
 
 ### 3. 펄스 폭(Pulse Width) 계산
-펄스 폭(Pulse Width)은 PWM 신호에서 High 상태가 유지되는 시간을 의미하며, 이는 타이머의 설정 값(Prescaler, Period, Compare Value)에 따라 결정된다. PWM 출력에서 __HAL_TIM_SET_COMPARE() 함수로 설정하는 값은 타이머 카운트 기준의 Compare Match 값으로, 곧 High 상태가 유지되는 시간(카운트 수)을 나타내며, 다음과 같이 계산한다.
+펄스 폭(Pulse Width)은 PWM 신호에서 High 상태가 유지되는 시간을 의미하며, 이는 타이머의 설정 값(Prescaler, Period, Compare Value)에 따라 결정된다. PWM 출력에서 __HAL_TIM_SET_COMPARE() 함수로 설정하는 값은 타이머 카운트 기준의 Compare Match 값으로, 곧 High 상태가 유지되는 시간(카운트 수)을 나타낸다.
 
-$$
-펄스 폭(μs) = {Compare Value} \times 2
-$$
+본 프로젝트의 Tick 시간은 2μs이므로 다음과 같이 계산된다.
+```latex
+펄스 폭(μs) = Compare Value × timer Tick 시간(μs)
+            = Compare Value × 2
+```
 
 ### 4. 듀티비(Duty Cycle) 계산
 듀티비란, PWM(펄스 폭 변조, Pulse Width Modulation) 신호에서 하나의 주기 동안 신호가 High 상태로 유지되는 비율을 뜻하며, 백분율(%)로 다음과 같이 계산한다.
 
-$$
-듀티 비(percent) = \frac{High상태시간}{전체주기시간} \times 100
-$$
+```latex
+듀티 비(%) = High 상태 시간 / 전체 주기 시간 × 100
+```
 
 - 듀티비가 높다 -> High 상태가 더 길다 -> 서보가 더 많이 회전
 - 듀티비가 낮다 -> High 상태가 짧다 -> 덜 회전
