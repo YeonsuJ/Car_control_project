@@ -22,3 +22,8 @@
 |서보모터 PWM 듀티비 기반 조향 각도 매핑 및 좌/우 조향 한계각 보정|[Servo_Motor.md](./Servo_Motor.md)|[1d18eda](https://github.com/YeonsuJ/Car_control_project/commit/1d18eda88c05c9aac707a6153e64591776d5ae05)|
 |자이로 roll 값 -> 서보모터 구동|[Gyro_Pwm_Mapping.md](./Gyro_Pwm_Mapping.md)|[7dc0c12](https://github.com/YeonsuJ/Car_control_project/commit/7dc0c1298043c86b4969e85140554ca7ac16d90a)|
 ---
+## 4주차 (25-06-02 ~ 25-06-08)
+|내용|문서 링크|커밋해시|
+|---|---|:---:|
+|버튼 눌림 시간 측정 로직 구현||[`7dcde54`](https://github.com/YeonsuJ/Car_control_project/commit/7dcde5411003d99339164ecea6fa701451369387)|
+---
