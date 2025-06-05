@@ -25,5 +25,5 @@
 ## 4주차 (25-06-02 ~ 25-06-08)
 |내용|문서 링크|커밋해시|
 |---|---|:---:|
-|버튼 눌림 시간 측정 로직 구현||[`7dcde54`](https://github.com/YeonsuJ/Car_control_project/commit/7dcde5411003d99339164ecea6fa701451369387)|
+|버튼 눌림 시간 측정 로직 구현|[Timer_Switch.md](./Timer_switch.md)|[`7dcde54`](https://github.com/YeonsuJ/Car_control_project/commit/7dcde5411003d99339164ecea6fa701451369387)|
 ---
