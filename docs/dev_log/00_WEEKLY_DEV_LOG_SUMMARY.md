@@ -26,4 +26,9 @@
 |내용|문서 링크|커밋해시|
 |---|---|:---:|
 |버튼 눌림 시간 측정 로직 구현|[Timer_Switch.md](./Timer_Switch.md)|[`7dcde54`](https://github.com/YeonsuJ/Car_control_project/commit/7dcde5411003d99339164ecea6fa701451369387)|
+|PWM + 엔코더 기반 DC모터 동작 및 RPM 측정 로직 구현|[Dc_Motor.md](./Dc_Motor.md)|[`45c4e16`](https://github.com/YeonsuJ/Car_control_project/commit/45c4e164ce43241788da8687f2dbf96ccc241a7f)|
 ---
+## 5주차 (25-06-09 ~ 25-06-15)
+|내용|문서 링크|커밋해시|
+|---|---|:---:|
+|버튼 눌림 시간 측정 로직 기반 DC모터 구동|||
