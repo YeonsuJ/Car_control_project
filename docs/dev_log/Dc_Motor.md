@@ -100,7 +100,7 @@ L298N은 일반적으로 2kHz ~ 5kHz 사이의 PWM 주파수에서 안정적으�
 
 ## 🔌 하드웨어 연결
 
-<img src="../wiring_diagram/dc_motor.png" alt="DC모터 결선도" width="400"/>
+<img src="../wiring_diagram/dc_motor.png" alt="DC모터 결선도" width="500"/>
 
 |외부전원(5V)|L298N|F446RE보드|DC모터|
 |:---:|:---:|:---:|:---:|
@@ -244,12 +244,14 @@ int32_t delta = (int16_t)(enc - last_encoder);
 static uint32_t state_durations[] = {5000, 2000, 5000, 2000};
 ```
 - state 변수를 사용해 4가지 상태(정회전, 정지, 역회전, 정지)를 순환
+
 |state|동작|듀티비|방향 설정(PB5/PB4)|
 |:---:|:---:|:---:|:---:|
 |0|정방향 회전|300|(1/0)|
 |1|정지|0|(0/0)|
 |2|역방향 회전|600|(0/1)|
 |3|정지|0|(0/0)|
+
 - 각 상태는 state_durations[] 배열에 따라 2초 또는 5초 유지됨
 - 상태 전환은 HAL_GetTick() 기반의 비차단 방식 (non-blocking) 으로 처리됨
 - HAL_Delay()와 같은 blocking 함수 대신 시간 차를 계산하는 방식이므로, while 루프를 멈추지 않고 RPM 측정, PID 제어, 통신 처리 등의 작업을 병렬적으로 처리 가능하다는 장점이 있음
