@@ -5,7 +5,8 @@
 | 커밋해시값 | 날짜         | 변경 내용 |
 |----------|--------------|-----------|
 | [`34db804`](https://github.com/YeonsuJ/Car_control_project/commit/34db80414a831400c01b22d808842b0f45d03a0e) | 2025-05-23 | Unit_car_sensor 프로젝트 파일 생성 |
-| [`82d4624`](https://github.com/YeonsuJ/Car_control_project/commit/82d462479a9bef4ad92decd2cc37d7a1186b770f) | 2025-05-23 | 초음파 센서 코드 추가|
+| [`7165ee7`](https://github.com/YeonsuJ/Car_control_project/commit/7165ee7f55b6ba93f8e09380047e063f922466cb) | 2025-05-24 | 인터럽트 기반 타이머 인풋 캡쳐를 활용한 초음파센서 거리값 출력 로직 구현|
+
 
 
 ## 버전 히스토리
