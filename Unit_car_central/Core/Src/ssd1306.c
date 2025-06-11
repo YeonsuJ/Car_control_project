@@ -170,6 +170,7 @@ uint8_t SSD1306_Init(void) {
 	if (HAL_I2C_IsDeviceReady(&hi2c2, SSD1306_I2C_ADDR, 1, 20000) != HAL_OK) {
 		/* Return false */
 		return 0;
+
 	}
 
 	/* A little delay */

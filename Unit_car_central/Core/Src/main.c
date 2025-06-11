@@ -36,9 +36,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define PPR 11
+#define PPR 11 // 홀센서 기준
 #define GEAR_RATIO 21.3f
-#define TICKS_PER_REV (PPR * GEAR_RATIO * 4)
+#define TICKS_PER_REV (PPR * GEAR_RATIO * 4) // 쿼드러쳐모드에 따라 4배
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -60,8 +60,15 @@ uint32_t last_tick = 0;
 
 int duty = 0;
 int accel_step = 5;
-int max_duty = 1000;
+int brake_step = 25;
+int max_duty = 999;
 int min_duty = 0;
+
+int direction_switch = 0;  // 0: FWD, 1: REV
+
+volatile uint8_t oled_update_flag = 0; // oled 화면 update
+
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -71,21 +78,7 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-//void Update_RPMA_Direction(void)
-//{
-//    int16_t enc = __HAL_TIM_GET_COUNTER(&htim3);
-//    int32_t delta = (int16_t)(enc - last_encoder);  // 오버플로우 보정
-//    last_encoder = enc;
-//
-//    motor_rpm = ((float)delta / TICKS_PER_REV) * 10.0f * 60.0f;
-//
-//    if (__HAL_TIM_IS_TIM_COUNTING_DOWN(&htim3))
-//        motor_direction = 1;
-//    else
-//        motor_direction = 0;
-//
-//    last_tick = HAL_GetTick();
-//}
+
 /* USER CODE END 0 */
 
 /**
@@ -128,69 +121,60 @@ int main(void)
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_3);
   HAL_TIM_Base_Start_IT(&htim2);
 
-//  uint32_t last_tick = HAL_GetTick();
-//  uint32_t motor_control_tick = 0;
-//  uint8_t state = 0;
-//
-//  static uint32_t state_durations[] = {5000, 2000, 5000, 2000};  // 각 상태 지속시간 (ms)
-
   // 모터 전진 방향 설정
    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET);  // in1 = 0
    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);    // in2 = 1
+
+   uint32_t prev_tick_main = HAL_GetTick();  // 이전 tick 저장
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-//	  if (HAL_GetTick() - last_tick >= 20)
-//	      {
-//	          Update_RPMA_Direction();
-//	      }
+	  uint32_t now = HAL_GetTick();
 
-//	  if (HAL_GetTick() - last_tick >= 20)
-//	  	    {
-//		  	  Update_RPMA_Direction();
-//	  	    }
-//
-//	  	  // 상태 기반으로 항상 핀/모터 상태 적용
-//	  	  switch (state)
-//	  	  {
-//	  	    case 0: // forward
-//	  	      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET);
-//	  	      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
-//	  	      __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_3, 300);
-//	  	      break;
-//	  	    case 1: // stop
-//	  	      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET);
-//	  	      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
-//	  	      __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_3, 0);
-//	  	      break;
-//	  	    case 2: // backward
-//	  	      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_SET);
-//	  	      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
-//	  	      __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_3, 600);
-//	  	      break;
-//	  	    case 3: // stop again
-//	  	      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET);
-//	  	      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
-//	  	      __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_3, 0);
-//	  	      break;
-//	  	  }
-//
-//	  	  // 상태 전이 조건은 별도로 유지
-//	  	  if (HAL_GetTick() - motor_control_tick >= state_durations[state])
-//	  	  {
-//	  	      state = (state + 1) % 4;
-//	  	      motor_control_tick = HAL_GetTick();
-//}
+	  if (now - prev_tick_main >= 20)  // 20ms 경과 체크
+	  {
+		  prev_tick_main = now;  // tick 갱신
 
+		  // 1) 방향 전환 스위치 처리
+		  if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_8) == GPIO_PIN_RESET)
+		  {
+			  direction_switch = 0;
+			  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET);  // in1 = 0
+			  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);    // in2 = 1
+		  }
+		  else if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_9) == GPIO_PIN_RESET)
+		  {
+			  direction_switch = 1;
+			  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_SET);  // in1 = 1
+			  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);    // in2 = 0
+		  }
+
+		  // 2) OLED 업데이트
+		  if (oled_update_flag)
+		  {
+			  oled_update_flag = 0;
+
+			  char buffer1[20], buffer2[20];
+			  snprintf(buffer1, sizeof(buffer1), "RPM: %.1f", motor_rpm);
+			  SSD1306_GotoXY(0, 20);
+			  SSD1306_Puts(buffer1, &Font_11x18, 1);
+
+			  snprintf(buffer2, sizeof(buffer2), "DIR: %s", direction_switch == 0 ? "FWD" : "REV");
+			  SSD1306_GotoXY(0, 40);
+			  SSD1306_Puts(buffer2, &Font_11x18, 1);
+			  SSD1306_UpdateScreen();
+		  }
+	   }
     /* USER CODE END WHILE */
- }
-    /* USER CODE BEGIN 3 */
-}
-  /* USER CODE END 3 */
 
+    /* USER CODE BEGIN 3 */
+  }
+  /* USER CODE END 3 */
+}
 
 /**
   * @brief System Clock Configuration
@@ -251,7 +235,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
     uint32_t now = HAL_GetTick();
 
-    if (GPIO_Pin == GPIO_PIN_0)  // Accel 버튼
+    if (GPIO_Pin == GPIO_PIN_0)  // Accel 버튼(PB0)
     {
         if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_RESET)
         {
@@ -267,7 +251,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
             prev_tick_accel = now;
         }
     }
-    else if (GPIO_Pin == GPIO_PIN_1)  // Brake 버튼
+    else if (GPIO_Pin == GPIO_PIN_1)  // Brake 버튼 (PB1)
     {
         if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1) == GPIO_PIN_RESET)
         {
@@ -283,15 +267,19 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
             prev_tick_brake = now;
         }
     }
+
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
+	if (brake_pressed) //brake부터 체크해야 동시에 누를 때 brake가 우선처리됨
+		duty -= brake_step;
+
 
 	if (htim->Instance == TIM2)
 	    {
 			// 1) RPM 업데이트
-			int16_t enc = __HAL_TIM_GET_COUNTER(&htim3);
+			int16_t enc = (int16_t)__HAL_TIM_GET_COUNTER(&htim3);
 			int32_t delta = (int16_t)(enc - last_encoder);
 			last_encoder = enc;
 
@@ -302,13 +290,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	        if (accel_pressed) accel_count++;
 	        if (brake_pressed) brake_count++;
 
-
 	        // 3) PWM duty 제어
-	        if (brake_pressed) //brake부터 체크해야 동시에 누를 때 brake가 우선처리됨
-	        {
-	        	duty -= accel_step * 5;
-	        }
-	        else if (accel_pressed)
+	        if (accel_pressed)
 	        {
 	        	if (duty ==0) duty = 200; // deadzone으로 인해 초기값 수정
 	        	else duty += accel_step;
@@ -324,38 +307,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 	        __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_3, duty);
 
+	        // flag설정
+	        oled_update_flag = 1;  // OLED 업데이트 요청만 표시
 
-			// 4) OLED 출력
-			char buffer1[20], buffer2[20];
-			SSD1306_Clear(); // 화면 초기화 설정
-			snprintf(buffer1, sizeof(buffer1), "DUTY: %.1f", (float)duty);
-			SSD1306_GotoXY(0, 0);
-			SSD1306_Puts(buffer1, &Font_11x18, 1);
-			snprintf(buffer2, sizeof(buffer2), "RPM: %.1f", motor_rpm);
-			SSD1306_GotoXY(0, 20);
-	        SSD1306_Puts(buffer2, &Font_11x18, 1);
-			SSD1306_UpdateScreen();
+	      }
 
-	        }
-
-
-//    if (htim->Instance == TIM2) // 20ms 주기 타이머
-//    {
-//        if (accel_pressed) accel_count++;
-//        if (brake_pressed) brake_count++;
-//
-//        char buffer1[20], buffer2[20];
-//
-//        snprintf(buffer1, sizeof(buffer1), "ACC: %lums", accel_count * 20);
-//        SSD1306_GotoXY(0, 0);
-//        SSD1306_Puts(buffer1, &Font_11x18, 1);
-//
-//        snprintf(buffer2, sizeof(buffer2), "BRK: %lums", brake_count * 20);
-//        SSD1306_GotoXY(0, 20);
-//        SSD1306_Puts(buffer2, &Font_11x18, 1);
-//
-//        SSD1306_UpdateScreen();
-//    }
 }
 /* USER CODE END 4 */
 
