@@ -38,7 +38,7 @@
 ## 5주차 (25-06-09 ~ 25-06-15)
 |내용|문서 링크|커밋해시|
 |---|---|:---:|
-|버튼 누름 시간 기반 DC 모터 속도 제어 및 로커 스위치 전/후진 전환 + OLED 상태 표시 기능 구현|[Dc_Motor_Oled.md](./Dc_Motor_Oled.md)|[`ad9f4bc`](https://github.com/YeonsuJ/Car_control_project/commit/ad9f4bc341844dbb1dcecefefb23643b87a2f076)|
+|버튼 누름 시간 기반 DC 모터 속도 제어 및 로커 스위치 전/후진 전환 + OLED 상태 표시 기능 구현|[Dc_Motor_Oled_Switch.md](./Dc_Motor_Oled_Switch.md)|[`ad9f4bc`](https://github.com/YeonsuJ/Car_control_project/commit/ad9f4bc341844dbb1dcecefefb23643b87a2f076)|
 |초음파센서 거리값 -> 진동센서 동작 구현||
 
 ---
