@@ -1,7 +1,8 @@
 # 버튼 누름 시간 기반 DC 모터 속도 제어 및 로커 스위치 전/후진 전환 + OLED 상태 표시 기능 구현	
 
 ## 🎯 프로젝트 활용 방안
-본 프로젝트에서 
+- 이 기능은 버튼 누름 시간에 따라 DC 모터의 속도를 정밀하게 제어하고, 로커 스위치를 통해 차량의 전진/후진 방향을 전환하며, OLED 디스플레이를 통해 현재 속도와 방향 상태를 실시간으로 시각화함으로써 
+운전자 입력 기반의 직관적 주행 제어 시스템을 구현한다. 이는 RC카 프로젝트에서 운전자의 조작에 따른 속도 및 방향 제어를 가능하게 하고, 시각적 피드백을 통해 디버깅과 주행 안정성을 향상시키는 데 활용된다. 
 ---
 
 ## 📖 이론 개요
@@ -22,7 +23,7 @@
 
 ## 🔌 하드웨어 연결
 
-<img src="../wiring_diagram/dc_motor_oled_switch.png" alt="DC모터 스위치 OLED 결선도" width="500"/>
+<img src="../wiring_diagram/dc_motor_oled_switch.png" alt="DC모터 스위치 OLED 결선도" width="700"/>
 
 |외부전원(5V)|L298N|F446RE보드|DC모터|
 |:---:|:---:|:---:|:---:|
@@ -80,46 +81,105 @@
 > [이전 dc모터 ioc setting 참고](./Dc_Motor.md)
 ---
 ## 💻 코드 설명
-동작요약 : 
+동작요약 : 로커 스위치(PC8, PC9 입력 핀)의 상태를 20ms마다 폴링(polling)하여, 모터 드라이버의 IN1 / IN2 핀(GPIOB 4, 5)에 신호를 출력함으로써 DC 모터의 회전 방향(FWD/REV)을 전환
 
+```c
+if (now - prev_tick_main >= 20)  // 20ms마다 주기적으로 검사
+{
+    prev_tick_main = now;
+
+    // 1) 방향 전환 스위치 처리
+    if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_8) == GPIO_PIN_RESET)  // PC8 == LOW → FWD
+    {
+        direction_switch = 0; // 상태 저장용
+        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET);  // IN1 = 0
+        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);    // IN2 = 1 → 정방향 회전
+    }
+    else if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_9) == GPIO_PIN_RESET)  // PC9 == LOW → REV
+    {
+        direction_switch = 1;
+        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_SET);  // IN1 = 1
+        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);    // IN2 = 0 → 역방향 회전
+    }
+}
+```
+
+### 작동 원리
+
+## 로커스위치 기반 방향 전환 작동 원리
+
+|로커스위치 위치|PC8 상태|PC9 상태|IN1 (PB4)|IN2 (PB5)|모터 회전 방향|
+|---------|----|--------|---------|--------|----------|
+|전진 (FWD)|LOW|HIGH|0 (LOW)|1 (HIGH)|정방향 회전|
+|후진 (REV)|HIGH|LOW|1 (HIGH)|0 (LOW)|역방향 회전|
+|중립 (없음)|HIGH|HIGH|이전 상태 유지|이전 상태 유지|변화 없음|
+
+- 로커스위치는 한 번 누르면 한 쪽으로 고정되어 LOW 상태가 지속되므로 폴링 방식이 적절함
+- 둘 다 HIGH일 경우, 방향은 변경되지 않고 직전 설정 상태 유지된다.
+
+### direction_switch 변수
+```c
+int direction_switch = 0; // 0: FWD, 1: REV
+```
+- 현재 방향 상태를 변수로 저장해두고 OLED 출력 등 다른 로직에서도 참조할 수 있게 함
+- "DIR: %s" 출력 시 사용
+```c
+snprintf(buffer2, sizeof(buffer2), "DIR: %s", direction_switch == 0 ? "FWD" : "REV");
+```
 
 ---
 
 ## ⚠️🛠️ 문제 해결 및 개선/확장
 
 ### 문제상황1.
-while 무한루프 블로킹 문제 (로커스위치를 폴링방식으로 적용하려는데 계속  동작이 안됨)<br>
-해결 : 
+로커스위치를 폴링 방식으로 처리하려 했으나, while 루프 내 코드가 동작하지 않음
 
--> 하드웨어는 그대로, 빈 프로젝트로는 정상적으로 동작함
+- while (1) 루프가 정상적으로 실행되지 않고, 로커 스위치 입력도 무시되는 현상 발생
+- 하드웨어 구성은 그대로 두고, 빈 프로젝트에서는 문제 없이 작동함
+- HAL_TIM_Base_Start_IT(&htim2); 함수만 주석 처리하면 동작이 정상화됨 → 문제의 원인이 TIM2 인터럽트에 있음
+- 분석 결과, HAL_TIM_PeriodElapsedCallback() 함수 내에서 SSD1306_UpdateScreen() 호출
+    - 해당 함수는 내부적으로 HAL_I2C_Master_Transmit() (블로킹 방식 I2C API)을 사용
+    - 그러나 I2C는 자체적으로도 인터럽트를 사용함
+    - → ISR 안에서 블로킹 I2C 호출 시 데드락 발생
+- 이로 인해 인터럽트에서 빠져나오지 못하고, main 루프에 진입하지 못함 → MCU 전체가 정지된 것처럼 보임
+#### 해결 : 인터럽트에서는 OLED 업데이트를 하지 않고, 플래그 설정만 하도록 구조 변경
+- HAL_TIM_PeriodElapsedCallback() 안에서는 디스플레이 갱신을 직접 수행하지 않음
+- 대신 oled_update_flag = 1; 같은 플래그만 설정
+- while(1) 루프 안에서 oled_update_flag가 설정되었을 때만 SSD1306_UpdateScreen() 호출
+```c
+// 타이머 인터럽트 내부
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+    if (htim->Instance == TIM2)
+    {
+        oled_update_flag = 1;  // 디스플레이 갱신 요청
+    }
+}
 
--> HAL_TIM_Base_Start_IT(&htim2); 를 주석처리하니까 정상적으로 동작함 >> 타이머2에서 문제가 발생했던거임
+// 메인 루프
+while (1)
+{
+    if (oled_update_flag)
+    {
+        oled_update_flag = 0;
+        SSD1306_UpdateScreen();  // 여기서만 OLED 갱신
+    }
 
->> 현재 코드에서 HAL_TIM_PeriodElapsedCallback() 인터럽트 콜백 함수 안에서 I2C 기반 OLED 제어 
-함수들을 호출하고 있으며, 이로 인해 CPU가 인터럽트 서비스 루틴(ISR)에 블로킹된 채 
-빠져나오지 못하는 상황이 발생합니다.
+    // 로커 스위치 폴링 등 다른 동작 수행
+}
+```
 
-SSD1306_UpdateScreen();   // I2C 통신 포함!
+#### 💡 추가 팁
+- 중요한 실시간 제어: 인터럽트 기반
+- 부하가 크거나 통신 지연이 있는 작업: 메인 루프에서 플래그 기반 처리
+- ISR에서는 블로킹 함수(I2C, UART, HAL_Delay 등) 절대 호출 금지
 
-➡ 이 중 SSD1306_UpdateScreen() 함수는 내부에서 HAL_I2C_Master_Transmit()을 사용합니다.
-이 함수는 **블로킹 방식(BLOCKING I2C API)**이며, 인터럽트 루틴 안에서 호출되면 다음과 같은 문제가 생깁니다:
+---
 
-인터럽트가 끝나야만 main loop (while(1))으로 복귀 가능
-
-하지만 I2C는 내부적으로도 인터럽트를 사용하기 때문에 인터럽트 내에서 I2C 호출 시 데드락이 발생
-
-결과: MCU는 응답이 없는 것처럼 정지
-
-해결 : OLED 화면 업데이트는 while(1) 루프에서만 수행하고, 타이머 인터럽트에서는 플래그만 설정하세요.
-
-인터럽트 기반(TIM2)과 폴링 기반(while-loop)은 우선순위나 정확도에서 차이가 있을 수 있으므로, 중요한 제어는 인터럽트에서 처리하고, 
-디스플레이나 보조 상태 확인 등은 while 루프에서 처리하는 것이 일반적인 구조입니다.
-
-
-### 개선사항
+### 개선사항 1.
 - CubeMX에서 Peripheral 별 파일 분할
 
-### 설정 방법
+#### 설정 방법
 1. CubeMX 실행 후 .ioc 파일 열기
 2. 상단 메뉴에서<br>
     Project Manager > Code Generator 탭 선택
@@ -128,7 +188,7 @@ SSD1306_UpdateScreen();   // I2C 통신 포함!
 
 - 이 설정이 되어 있지 않으면 main.c 내부나 stm32f4xx_hal_msp.c 등에 모든 초기화 코드가 모이게 된다.
 
-### Peripheral 별 파일 분할의 장점
+#### Peripheral 별 파일 분할의 장점
 - 가독성 향상
     - 각 주변장치의 설정이 해당 전용 파일에 명확히 구분되므로, 코드를 파악하고 수정하기 쉬워짐
 - 유지보수 용이
@@ -144,7 +204,14 @@ SSD1306_UpdateScreen();   // I2C 통신 포함!
 ---
 
 ## 💡 향후 확장 및 개선 아이디어
-- 해결못한사항 -> timer2 내부의 하드웨어 주기와 while 내부의 주기가 다르기 때문에 oled 출력에 rpm max 값이 230정도로 낮게 출력됨.
 
+### RTOS 기반 확장 및 개선 아이디어
+- OLED 제어 전용 Task 분리
+- FreeRTOS 소프트웨어 타이머 활용
+- 로커스위치 입력 감지 Task 분리
+- Task 우선순위 기반 스케줄링 적용
+- OLED 업데이트 최적화 (Dirty Flag 방식)
+- RF 통신 Task 통합
+- 멀티 Task 기반 시스템 구조 설계
 
  
