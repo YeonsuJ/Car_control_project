@@ -18,11 +18,15 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "adc.h"
+#include "i2c.h"
+#include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "liquidcrystal_i2c.h"
 #include <stdio.h>
+#include "fonts.h"
+#include "ssd1306.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -41,9 +45,6 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-ADC_HandleTypeDef hadc1;
-
-I2C_HandleTypeDef hi2c1;
 
 /* USER CODE BEGIN PV */
 
@@ -51,9 +52,6 @@ I2C_HandleTypeDef hi2c1;
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
-static void MX_ADC1_Init(void);
-static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -63,7 +61,7 @@ static void MX_I2C1_Init(void);
 // --- adc 전압출력 및 배터리 전압 → 퍼센트 계산 함수 ---
 float Read_Battery_Percentage(float* vout_ret)
 {
-	float correction = 3.15/3.11f; // 수치 보정을 위한 보정계수(멀티미터 측정 : 3.15V -> ADC 3.11V 출력)
+	float correction = 3.08/3.04f; // 수치 보정을 위한 보정계수(멀티미터 측정 : 3.15V -> ADC 3.11V 출력)
 
 	HAL_ADC_Start(&hadc1);
 	HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
@@ -86,7 +84,7 @@ float Read_Battery_Percentage(float* vout_ret)
 	if (percent > 100.0f) percent = 100.0f;
 	if (percent < 0.0f) percent = 0.0f;
 
-	// 5. vout 값 반환 (LCD 출력용)
+	// 5. vout 값 반환 (OLED 출력용)
 	if (vout_ret != NULL)
 		*vout_ret = vout;
 
@@ -127,34 +125,44 @@ int main(void)
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
 
-  // LCD 초기화 및 출력
-  HD44780_Init(2);         // 2줄 LCD
-  HD44780_Clear();
-
-  char line1[16], line2[16];
+  // OLED 초기화
+  SSD1306_Init();
+  SSD1306_Clear();
+  SSD1306_UpdateScreen();  // 초기 클리어 반영
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
+  uint32_t last_update_time = HAL_GetTick();
+
   while (1)
   {
-	float vout = 0.0f;
-	float percent = Read_Battery_Percentage(&vout);
+	 uint32_t now = HAL_GetTick();
 
-	uint8_t display_percent = (uint8_t)(percent + 0.5f);  // 소수점 반올림
-	snprintf(line1, sizeof(line1), "Battery: %3d%%", display_percent);
+	 if (now - last_update_time >= 1000)  // 1초 경과 시
+	 {
+		 last_update_time = now;
 
-	snprintf(line2, sizeof(line2), "Voltage: %.2f V", vout);
+		 float vout = 0.0f;
+		 float percent = Read_Battery_Percentage(&vout);
 
-	HD44780_Clear();
-	HD44780_SetCursor(0, 0);
-	HD44780_PrintStr(line1);
+		 uint8_t display_percent = (uint8_t)(percent + 0.5f);  // 소수점 반올림
 
-	HD44780_SetCursor(0, 1);
-	HD44780_PrintStr(line2);
+		 char buffer1[20], buffer2[20]; // OLED에 출력할 텍스트 버퍼
+		 snprintf(buffer1, sizeof(buffer1), "BAT: %3d%%", display_percent);
+		 snprintf(buffer2, sizeof(buffer2), "VOL: %.2fV", vout);
 
-	HAL_Delay(1000);
+		 SSD1306_Clear();
+		 SSD1306_GotoXY(0, 0);
+		 SSD1306_Puts(buffer1, &Font_11x18, 1);
+
+		 SSD1306_GotoXY(0, 20);
+		 SSD1306_Puts(buffer2, &Font_11x18, 1);
+
+		 SSD1306_UpdateScreen();
+	 }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -203,107 +211,6 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-}
-
-/**
-  * @brief ADC1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_ADC1_Init(void)
-{
-
-  /* USER CODE BEGIN ADC1_Init 0 */
-
-  /* USER CODE END ADC1_Init 0 */
-
-  ADC_ChannelConfTypeDef sConfig = {0};
-
-  /* USER CODE BEGIN ADC1_Init 1 */
-
-  /* USER CODE END ADC1_Init 1 */
-
-  /** Common config
-  */
-  hadc1.Instance = ADC1;
-  hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
-  hadc1.Init.DiscontinuousConvMode = DISABLE;
-  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
-  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.NbrOfConversion = 1;
-  if (HAL_ADC_Init(&hadc1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_1;
-  sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_239CYCLES_5;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN ADC1_Init 2 */
-
-  /* USER CODE END ADC1_Init 2 */
-
-}
-
-/**
-  * @brief I2C1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_I2C1_Init(void)
-{
-
-  /* USER CODE BEGIN I2C1_Init 0 */
-
-  /* USER CODE END I2C1_Init 0 */
-
-  /* USER CODE BEGIN I2C1_Init 1 */
-
-  /* USER CODE END I2C1_Init 1 */
-  hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 100000;
-  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
-  hi2c1.Init.OwnAddress1 = 0;
-  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-  hi2c1.Init.OwnAddress2 = 0;
-  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN I2C1_Init 2 */
-
-  /* USER CODE END I2C1_Init 2 */
-
-}
-
-/**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_GPIO_Init(void)
-{
-  /* USER CODE BEGIN MX_GPIO_Init_1 */
-
-  /* USER CODE END MX_GPIO_Init_1 */
-
-  /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
-
-  /* USER CODE BEGIN MX_GPIO_Init_2 */
-
-  /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
