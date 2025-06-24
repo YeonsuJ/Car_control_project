@@ -10,6 +10,8 @@
 | [`45c4e16`](https://github.com/YeonsuJ/Car_control_project/commit/45c4e164ce43241788da8687f2dbf96ccc241a7f) | 2025-06-05 | DC 모터 제어 및 엔코더 기반 RPM 측정 기능 구현 |
 | [`3d1299e`](https://github.com/YeonsuJ/Car_control_project/commit/3d1299e5b8503f3396420f090a27b58ee6edd679) | 2025-06-09 | 버튼 눌림 시간 기반 DC 모터 PWM 제어 및 RPM 계산 후 OLED 실시간 상태 출력 로직 추가 |
 | [`ad9f4bc`](https://github.com/YeonsuJ/Car_control_project/commit/ad9f4bc341844dbb1dcecefefb23643b87a2f076) | 2025-06-11 | 로커 스위치를 이용한 DC 모터 전/후진 제어 및 OLED 실시간 상태 표시 기능 추가|
+| [`3c3b16f`](https://github.com/YeonsuJ/Car_control_project/commit/3c3b16f653379466fd9c0d39f7b53c472481e6a6) | 2025-06-22 | Shift-lock 시스템 적용: DC모터 전/후진 전환 시 브레이크 입력 필수 조건 추가|
+
 
 
 ## 버전 히스토리
