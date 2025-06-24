@@ -46,7 +46,7 @@
 ## 6주차 (25-06-16 ~ 25-06-22)
 |내용|문서 링크|커밋해시|
 |---|---|:---:|
-|ADC 전압 기반 배터리 잔량 측정 후 디스플레이 -> OLED 디스플레이로 교체||
+|선형 보간 방식 기반 ADC 배터리 측정 후 OLED 출력 로직으로 수정|[Adc_Oled_Battery_Check.md](./Adc_Oled_Battery_Check.md)|[`7bd584e`](https://github.com/YeonsuJ/Car_control_project/commit/7bd584ef51410f1fcd1aae941d038a377702ed81)|
 |Shift-lock 시스템 적용: DC모터 전/후진 전환 시 브레이크 입력 필수 조건 추가||
 ---
 
