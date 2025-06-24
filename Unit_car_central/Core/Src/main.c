@@ -139,18 +139,22 @@ int main(void)
 	  {
 		  prev_tick_main = now;  // tick 갱신
 
-		  // 1) 방향 전환 스위치 처리
-		  if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_8) == GPIO_PIN_RESET)
+		  // 1) 브레이크가 눌렸을 때만 방향 전환이 되도록 스위치 처리
+		  if (brake_pressed)
 		  {
-			  direction_switch = 0;
-			  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET);  // in1 = 0
-			  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);    // in2 = 1
-		  }
-		  else if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_9) == GPIO_PIN_RESET)
-		  {
-			  direction_switch = 1;
-			  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_SET);  // in1 = 1
-			  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);    // in2 = 0
+			  if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_8) == GPIO_PIN_RESET)
+			  {
+				  direction_switch = 0;
+				  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET);  // in1 = 0
+				  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);    // in2 = 1
+			  }
+			  else if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_9) == GPIO_PIN_RESET)
+			  {
+				  direction_switch = 1;
+				  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_SET);  // in1 = 1
+				  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);    // in2 = 0
+			  }
+
 		  }
 
 		  // 2) OLED 업데이트
