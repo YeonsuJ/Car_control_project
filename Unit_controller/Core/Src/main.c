@@ -51,7 +51,6 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-MPU6050_t MPU6050;
 
 volatile uint8_t accel_pressed = 0;
 volatile uint8_t brake_pressed = 0;
@@ -65,8 +64,6 @@ uint32_t previousMillis = 0;
 uint32_t currentMillis = 0;
 uint32_t counterOutside = 0; //For testing only
 uint32_t counterInside = 0; //For testing only
-
-volatile uint8_t button_pressed = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -78,11 +75,9 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 #define PLD_S 32
-uint8_t tx_addr[5] = {0x45, 0x55, 0x67, 0x10, 0x21};
-uint8_t dataT[PLD_S];  // 전송 버퍼
-
-uint32_t lastTransmitTick = 0;
-const uint32_t transmitInterval = 20;
+uint8_t rx_buffer[PLD_S] = {0};
+volatile uint8_t new_data_flag = 0;
+volatile float received_roll = 0.0f;
 
 /* USER CODE END 0 */
 
@@ -121,8 +116,7 @@ int main(void)
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
   SSD1306_Init();
-  while (MPU6050_Init(&hi2c2) == 1);
-//    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
   HAL_TIM_Base_Start_IT(&htim2);
 
   csn_high();
@@ -147,36 +141,37 @@ int main(void)
   nrf24_auto_retr_delay(4);
   nrf24_auto_retr_limit(10);
 
-  nrf24_open_tx_pipe(tx_addr);
-  ce_high();
+  uint8_t rx_addr[5] = {0x45, 0x55, 0x67, 0x10, 0x21};
+  nrf24_open_rx_pipe(0, rx_addr);
+
+  nrf24_listen();   // 수신 대기 시작
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
     while (1)
     {
-    	 uint32_t now = HAL_GetTick();
+        if (new_data_flag)
+        {
+            new_data_flag = 0;
 
-    	    if (now - lastTransmitTick >= transmitInterval)
-    	    {
-    	        lastTransmitTick = now;
+            float roll = received_roll;
 
-    	        // 1. 자이로센서 데이터 읽기
-    	        MPU6050_Read_All(&hi2c2, &MPU6050);
-    	        float roll = MPU6050.KalmanAngleX;
+            // OLED 출력
+            char buffer_roll[20];
+            snprintf(buffer_roll, sizeof(buffer_roll), "Roll: %.2f", roll);
+            SSD1306_GotoXY(0, 0);
+            SSD1306_Puts(buffer_roll, &Font_11x18, 1);
+            SSD1306_UpdateScreen();
 
-    	        // 2. 전송 버퍼 구성
-    	        memset(dataT, 0, PLD_S);
-    	        dataT[0] = 1;  // 식별자
+            // 값 제한
+            if (roll < -90.0f) roll = -90.0f;
+            if (roll >  90.0f) roll = 90.0f;
 
-    	        // ✅ float → int16_t 변환 (100배 스케일링)
-    	        int16_t roll_encoded = (int16_t)(roll * 100.0f);
-    	        memcpy(&dataT[1], &roll_encoded, sizeof(int16_t));  // 1~2 byte 사용
-
-    	        // 3. NRF24 전송
-    	        nrf24_transmit(dataT, PLD_S);
-    	    }
-
+            float angle = roll + 90.0f;
+            uint16_t pwm = (uint16_t)(500 + (angle / 180.0f) * 2000.0f);
+            __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, pwm);
+        }
 //        // 자이로 센서 데이터 읽기
 //        MPU6050_Read_All(&hi2c2, &MPU6050);
 //
@@ -248,30 +243,26 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+    if (GPIO_Pin == GPIO_PIN_3)  // IRQ 핀
+    {
+        if (nrf24_data_available())
+        {
+            nrf24_receive(rx_buffer, PLD_S);
 
-//void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)   // TX
-//{
-//    if(GPIO_Pin == GPIO_PIN_0)  // EXTI0 = PB0
-//    {
-//        button_pressed = 1;     // 메인 루프에서 이 값 체크하여 전송
-//    }
-//}
+            if (rx_buffer[0] == 1)
+            {
+                int16_t roll_encoded = 0;
+                memcpy(&roll_encoded, &rx_buffer[1], sizeof(int16_t));
 
-//void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) // RX
-//{
-//  if (GPIO_Pin == GPIO_PIN_3) // IRQ
-//  {
-//    if (nrf24_data_available())
-//    {
-//      nrf24_receive(rx_buffer, PLD_S);
-//
-//      if (rx_buffer[0] == 1)
-//      {
-//        HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_4);  // PB4 LED 토글
-//      }
-//    }
-//  }
-//}
+                // int16_t → float 복원 (100배 스케일링 기준)
+                received_roll = ((float)roll_encoded) / 100.0f;
+                new_data_flag = 1;
+            }
+        }
+    }
+}
 
 //void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 //{
@@ -332,24 +323,7 @@ void SystemClock_Config(void)
 //    }
 //}
 
-//void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-//{
-//  counterOutside++; //For testing only
-//  currentMillis = HAL_GetTick();
-//  if (GPIO_Pin == GPIO_PIN_0 && (currentMillis - previousMillis > 10))
-//  {
-//    counterInside++; //For testing only
-//    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_0);
-//    previousMillis = currentMillis;
-//  }
-//
-//  if (GPIO_Pin == GPIO_PIN_1 && (currentMillis - previousMillis > 10))
-//  {
-//    counterInside++; //For testing only
-//    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_1);
-//    previousMillis = currentMillis;
-//  }
-//}
+
 /* USER CODE END 4 */
 
 /**
