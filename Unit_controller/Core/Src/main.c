@@ -81,7 +81,8 @@ void SystemClock_Config(void);
 uint8_t tx_addr[5] = {0x45, 0x55, 0x67, 0x10, 0x21};
 uint8_t dataT[PLD_S];  // 전송 버퍼
 
-//uint8_t rx_buffer[PLD_S] = {0};
+uint32_t lastTransmitTick = 0;
+const uint32_t transmitInterval = 20;
 
 /* USER CODE END 0 */
 
@@ -120,7 +121,7 @@ int main(void)
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
   SSD1306_Init();
-//    while (MPU6050_Init(&hi2c2) == 1);
+  while (MPU6050_Init(&hi2c2) == 1);
 //    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
   HAL_TIM_Base_Start_IT(&htim2);
 
@@ -147,26 +148,34 @@ int main(void)
   nrf24_auto_retr_limit(10);
 
   nrf24_open_tx_pipe(tx_addr);
-//  nrf24_open_rx_pipe(0, tx_addr);  // ACK 수신 필요 시 활성
   ce_high();
-
-//  uint8_t rx_addr[5] = {0x45, 0x55, 0x67, 0x10, 0x21};
-//  nrf24_open_rx_pipe(0, rx_addr);
-//
-//  nrf24_listen();   // 수신 대기 시작
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
     while (1)
     {
-        if(button_pressed)
-        {
-            memset(dataT, 0, PLD_S);
-            dataT[0] = 1;  // 단순한 신호
-            nrf24_transmit(dataT, PLD_S);
-            button_pressed = 0;
-        }
+    	 uint32_t now = HAL_GetTick();
+
+    	    if (now - lastTransmitTick >= transmitInterval)
+    	    {
+    	        lastTransmitTick = now;
+
+    	        // 1. 자이로센서 데이터 읽기
+    	        MPU6050_Read_All(&hi2c2, &MPU6050);
+    	        float roll = MPU6050.KalmanAngleX;
+
+    	        // 2. 전송 버퍼 구성
+    	        memset(dataT, 0, PLD_S);
+    	        dataT[0] = 1;  // 식별자
+
+    	        // ✅ float → int16_t 변환 (100배 스케일링)
+    	        int16_t roll_encoded = (int16_t)(roll * 100.0f);
+    	        memcpy(&dataT[1], &roll_encoded, sizeof(int16_t));  // 1~2 byte 사용
+
+    	        // 3. NRF24 전송
+    	        nrf24_transmit(dataT, PLD_S);
+    	    }
 
 //        // 자이로 센서 데이터 읽기
 //        MPU6050_Read_All(&hi2c2, &MPU6050);
@@ -240,13 +249,13 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)   // TX
-{
-    if(GPIO_Pin == GPIO_PIN_0)  // EXTI0 = PB0
-    {
-        button_pressed = 1;     // 메인 루프에서 이 값 체크하여 전송
-    }
-}
+//void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)   // TX
+//{
+//    if(GPIO_Pin == GPIO_PIN_0)  // EXTI0 = PB0
+//    {
+//        button_pressed = 1;     // 메인 루프에서 이 값 체크하여 전송
+//    }
+//}
 
 //void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) // RX
 //{
