@@ -55,6 +55,7 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
+extern SPI_HandleTypeDef hspi1;
 extern TIM_HandleTypeDef htim2;
 /* USER CODE BEGIN EV */
 
@@ -227,6 +228,20 @@ void EXTI1_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles EXTI line3 interrupt.
+  */
+void EXTI3_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI3_IRQn 0 */
+
+  /* USER CODE END EXTI3_IRQn 0 */
+  HAL_GPIO_EXTI_IRQHandler(IRQ_Pin);
+  /* USER CODE BEGIN EXTI3_IRQn 1 */
+
+  /* USER CODE END EXTI3_IRQn 1 */
+}
+
+/**
   * @brief This function handles TIM2 global interrupt.
   */
 void TIM2_IRQHandler(void)
@@ -238,6 +253,20 @@ void TIM2_IRQHandler(void)
   /* USER CODE BEGIN TIM2_IRQn 1 */
 
   /* USER CODE END TIM2_IRQn 1 */
+}
+
+/**
+  * @brief This function handles SPI1 global interrupt.
+  */
+void SPI1_IRQHandler(void)
+{
+  /* USER CODE BEGIN SPI1_IRQn 0 */
+
+  /* USER CODE END SPI1_IRQn 0 */
+  HAL_SPI_IRQHandler(&hspi1);
+  /* USER CODE BEGIN SPI1_IRQn 1 */
+
+  /* USER CODE END SPI1_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

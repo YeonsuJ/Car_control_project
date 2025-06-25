@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "i2c.h"
+#include "spi.h"
 #include "tim.h"
 #include "gpio.h"
 
@@ -27,6 +28,9 @@
 #include "fonts.h"
 #include "ssd1306.h"
 #include "mpu6050.h"
+#include "NRF24.h"
+#include "NRF24_reg_addresses.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -61,6 +65,8 @@ uint32_t previousMillis = 0;
 uint32_t currentMillis = 0;
 uint32_t counterOutside = 0; //For testing only
 uint32_t counterInside = 0; //For testing only
+
+volatile uint8_t button_pressed = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -71,6 +77,11 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+#define PLD_S 32
+uint8_t tx_addr[5] = {0x45, 0x55, 0x67, 0x10, 0x21};
+uint8_t dataT[PLD_S];  // 전송 버퍼
+
+//uint8_t rx_buffer[PLD_S] = {0};
 
 /* USER CODE END 0 */
 
@@ -106,17 +117,57 @@ int main(void)
   MX_I2C1_Init();
   MX_I2C2_Init();
   MX_TIM2_Init();
+  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
   SSD1306_Init();
 //    while (MPU6050_Init(&hi2c2) == 1);
 //    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
-    HAL_TIM_Base_Start_IT(&htim2);
+  HAL_TIM_Base_Start_IT(&htim2);
+
+  csn_high();
+  ce_high();
+  HAL_Delay(5);
+  ce_low();
+
+  nrf24_init();
+  nrf24_stop_listen();  // 송신기이므로 listen 비활성화
+
+  nrf24_auto_ack_all(auto_ack);
+  nrf24_en_ack_pld(disable);
+  nrf24_dpl(disable);
+  nrf24_set_crc(no_crc, _1byte);
+
+  nrf24_tx_pwr(_0dbm);
+  nrf24_data_rate(_1mbps);
+  nrf24_set_channel(90);
+  nrf24_set_addr_width(5);
+  nrf24_set_rx_dpl(0, disable);
+  nrf24_pipe_pld_size(0, PLD_S);
+  nrf24_auto_retr_delay(4);
+  nrf24_auto_retr_limit(10);
+
+  nrf24_open_tx_pipe(tx_addr);
+//  nrf24_open_rx_pipe(0, tx_addr);  // ACK 수신 필요 시 활성
+  ce_high();
+
+//  uint8_t rx_addr[5] = {0x45, 0x55, 0x67, 0x10, 0x21};
+//  nrf24_open_rx_pipe(0, rx_addr);
+//
+//  nrf24_listen();   // 수신 대기 시작
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
     while (1)
     {
+        if(button_pressed)
+        {
+            memset(dataT, 0, PLD_S);
+            dataT[0] = 1;  // 단순한 신호
+            nrf24_transmit(dataT, PLD_S);
+            button_pressed = 0;
+        }
+
 //        // 자이로 센서 데이터 읽기
 //        MPU6050_Read_All(&hi2c2, &MPU6050);
 //
@@ -188,64 +239,89 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-    uint32_t now = HAL_GetTick();
 
-    if (GPIO_Pin == GPIO_PIN_0)  // Accel 버튼
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)   // TX
+{
+    if(GPIO_Pin == GPIO_PIN_0)  // EXTI0 = PB0
     {
-        if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_RESET)
-        {
-            // 눌림이 감지된 순간(하강), 디바운싱 여부와 상관없이 초기화
-            accel_pressed = 1;
-            accel_count = 0;
-            prev_tick_accel = now;
-        }
-        else
-        {
-            // 떼짐(상승)은 즉시 pressed=0 처리
-            accel_pressed = 0;
-            prev_tick_accel = now;
-        }
-    }
-    else if (GPIO_Pin == GPIO_PIN_1)  // Brake 버튼
-    {
-        if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1) == GPIO_PIN_RESET)
-        {
-            // 눌림이 감지된 순간(하강), 디바운싱 여부와 상관없이 초기화
-            brake_pressed = 1;
-            brake_count = 0;
-            prev_tick_brake = now;
-        }
-        else
-        {
-            // 떼짐(상승)은 즉시 pressed=0 처리
-            brake_pressed = 0;
-            prev_tick_brake = now;
-        }
+        button_pressed = 1;     // 메인 루프에서 이 값 체크하여 전송
     }
 }
 
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-    if (htim->Instance == TIM2) // 20ms 주기 타이머
-    {
-        if (accel_pressed) accel_count++;
-        if (brake_pressed) brake_count++;
+//void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) // RX
+//{
+//  if (GPIO_Pin == GPIO_PIN_3) // IRQ
+//  {
+//    if (nrf24_data_available())
+//    {
+//      nrf24_receive(rx_buffer, PLD_S);
+//
+//      if (rx_buffer[0] == 1)
+//      {
+//        HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_4);  // PB4 LED 토글
+//      }
+//    }
+//  }
+//}
 
-        char buffer1[20], buffer2[20];
-
-        snprintf(buffer1, sizeof(buffer1), "ACC: %lums", accel_count * 20);
-        SSD1306_GotoXY(0, 0);
-        SSD1306_Puts(buffer1, &Font_11x18, 1);
-
-        snprintf(buffer2, sizeof(buffer2), "BRK: %lums", brake_count * 20);
-        SSD1306_GotoXY(0, 20);
-        SSD1306_Puts(buffer2, &Font_11x18, 1);
-
-        SSD1306_UpdateScreen();
-    }
-}
+//void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+//{
+//    uint32_t now = HAL_GetTick();
+//
+//    if (GPIO_Pin == GPIO_PIN_0)  // Accel 버튼
+//    {
+//        if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_RESET)
+//        {
+//            // 눌림이 감지된 순간(하강), 디바운싱 여부와 상관없이 초기화
+//            accel_pressed = 1;
+//            accel_count = 0;
+//            prev_tick_accel = now;
+//        }
+//        else
+//        {
+//            // 떼짐(상승)은 즉시 pressed=0 처리
+//            accel_pressed = 0;
+//            prev_tick_accel = now;
+//        }
+//    }
+//    else if (GPIO_Pin == GPIO_PIN_1)  // Brake 버튼
+//    {
+//        if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1) == GPIO_PIN_RESET)
+//        {
+//            // 눌림이 감지된 순간(하강), 디바운싱 여부와 상관없이 초기화
+//            brake_pressed = 1;
+//            brake_count = 0;
+//            prev_tick_brake = now;
+//        }
+//        else
+//        {
+//            // 떼짐(상승)은 즉시 pressed=0 처리
+//            brake_pressed = 0;
+//            prev_tick_brake = now;
+//        }
+//    }
+//}
+//
+//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+//{
+//    if (htim->Instance == TIM2) // 20ms 주기 타이머
+//    {
+//        if (accel_pressed) accel_count++;
+//        if (brake_pressed) brake_count++;
+//
+//        char buffer1[20], buffer2[20];
+//
+//        snprintf(buffer1, sizeof(buffer1), "ACC: %lums", accel_count * 20);
+//        SSD1306_GotoXY(0, 0);
+//        SSD1306_Puts(buffer1, &Font_11x18, 1);
+//
+//        snprintf(buffer2, sizeof(buffer2), "BRK: %lums", brake_count * 20);
+//        SSD1306_GotoXY(0, 20);
+//        SSD1306_Puts(buffer2, &Font_11x18, 1);
+//
+//        SSD1306_UpdateScreen();
+//    }
+//}
 
 //void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 //{

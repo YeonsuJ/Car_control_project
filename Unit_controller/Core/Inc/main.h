@@ -59,10 +59,19 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define Servo_Out_Pin GPIO_PIN_2
 #define Servo_Out_GPIO_Port GPIOA
+#define CSN_Pin GPIO_PIN_3
+#define CSN_GPIO_Port GPIOA
+#define CE_Pin GPIO_PIN_4
+#define CE_GPIO_Port GPIOA
 #define Gyro_SCL_Pin GPIO_PIN_10
 #define Gyro_SCL_GPIO_Port GPIOB
 #define Gyro_SDA_Pin GPIO_PIN_11
 #define Gyro_SDA_GPIO_Port GPIOB
+#define IRQ_Pin GPIO_PIN_3
+#define IRQ_GPIO_Port GPIOB
+#define IRQ_EXTI_IRQn EXTI3_IRQn
+#define LED_Pin GPIO_PIN_4
+#define LED_GPIO_Port GPIOB
 #define OLED_SCL_Pin GPIO_PIN_6
 #define OLED_SCL_GPIO_Port GPIOB
 #define OLED_SDA_Pin GPIO_PIN_7
