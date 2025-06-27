@@ -48,11 +48,19 @@
 |---|---|:---:|
 |선형 보간 방식 기반 ADC 배터리 측정 후 OLED 출력 로직으로 수정|[Adc_Oled_Battery_Check.md](./Adc_Oled_Battery_Check.md)|[`7bd584e`](https://github.com/YeonsuJ/Car_control_project/commit/7bd584ef51410f1fcd1aae941d038a377702ed81)|
 |Shift-lock 시스템 적용: DC모터 전/후진 전환 시 브레이크 입력 필수 조건 추가|[Dc_Motor_Oled_Switch.md](./Dc_Motor_Oled_Switch.md)|[`3c3b16f`](https://github.com/YeonsuJ/Car_control_project/commit/3c3b16f653379466fd9c0d39f7b53c472481e6a6)|
+
 ---
 
 ## 7주차 (25-06-23 ~ 25-06-29)
 |내용|문서 링크|커밋해시|
 |---|---|:---:|
+|DC모터와 Servo모터 동작 기능 통합 및 핀 라벨링 추가||[`b474df6`](https://github.com/YeonsuJ/Car_control_project/commit/b474df67b9a24d75a08725cf00dbaa94170cabac)|
+|||
+
+---
+
+## 8주차 (25-06-30 ~ 25-07-06)
+|내용|문서 링크|커밋해시|
+|---|---|:---:|
 |CAN 컨트롤러의 루프백 모드를 활성화하여 내부 송수신 테스트||
 |조도감지센서 기반 전조등/후미등 구현||
-
