@@ -77,7 +77,70 @@
 > float을 무선 전송하려면 IEEE-754 형식으로 직렬화하고, 수신 후 다시 역직렬화(Deserialization)해야 하며, 이는 알고리즘 복잡도 및 코드 크기를 증가시키고 통신 오류 가능성도 높입니다.  
 > 따라서 본 프로젝트에서는 `float`형 roll 값을 송신 전 `int16_t` 타입으로 100배 스케일링하여 정수로 변환한 뒤 전송하고, 수신 시 다시 나누어 복원하는 구조를 채택하였습니다.
 ---
+## 🟩 송신부 동작 요약
 
+### 🔧 초기화 절차
+
+```c
+  SSD1306_Init();
+  while (MPU6050_Init(&hi2c2) == 1);
+  HAL_TIM_Base_Start_IT(&htim2);
+
+  csn_high();
+  ce_high();
+  HAL_Delay(5);
+  ce_low();
+
+  nrf24_init();
+  nrf24_stop_listen();  // 송신기이므로 listen 비활성화
+
+  nrf24_auto_ack_all(auto_ack);
+  nrf24_en_ack_pld(disable);
+  nrf24_dpl(disable);
+  nrf24_set_crc(no_crc, _1byte);
+
+  nrf24_tx_pwr(_0dbm);
+  nrf24_data_rate(_1mbps);
+  nrf24_set_channel(90);
+  nrf24_set_addr_width(5);
+  nrf24_set_rx_dpl(0, disable);
+  nrf24_pipe_pld_size(0, PLD_S);
+  nrf24_auto_retr_delay(4);
+  nrf24_auto_retr_limit(10);
+
+  nrf24_open_tx_pipe(tx_addr);
+  ce_high();
+```
+
+- **roll 값 측정 및 변환**:  
+  MPU6050 센서에서 읽어온 roll 각도 값(float)을 100배 스케일링하여 `int16_t`로 변환한 뒤 전송합니다.  
+  이 방식은 `float`의 무선 전송 부담을 줄이기 위한 정수화 처리이며, 수신부에서는 다시 `float`으로 복원합니다.
+
+```c
+MPU6050_Read_All(&hi2c2, &MPU6050);
+float roll = MPU6050.KalmanAngleX;
+int16_t roll_encoded = (int16_t)(roll * 100.0f);
+```
+
+- **acc/brk 값**: 버튼이 눌린 시간(ms)을 20ms 단위로 측정하여 `uint16_t`로 전송
+- **전송 주기**: `HAL_GetTick()` 기준 20ms 주기 송신
+- **전송 데이터 구조** (`uint8_t dataT[32]`):
+  - `dataT[0]`: 식별자 (`0x01`)
+  - `dataT[1~2]`: roll (int16_t)
+  - `dataT[3~4]`: acc 시간 (uint16_t)
+  - `dataT[5~6]`: brk 시간 (uint16_t)
+
+```c
+dataT[0] = 1;
+memcpy(&dataT[1], &roll_encoded, sizeof(int16_t));
+memcpy(&dataT[3], &accel_ms, sizeof(uint16_t));
+memcpy(&dataT[5], &brake_ms, sizeof(uint16_t));
+nrf24_transmit(dataT, 32); 
+```
+
+> 🔁 이 구조는 송신부에서의 데이터 용량 최소화와 실시간 전송의 안정성을 동시에 만족시키며, 수신부에서는 `roll = (float)roll_encoded / 100.0f` 방식으로 원래 각도를 복원합니다.
+
+---
 ## 🟩 수신부 동작 요약
 
 ### 🔧 초기화 절차
