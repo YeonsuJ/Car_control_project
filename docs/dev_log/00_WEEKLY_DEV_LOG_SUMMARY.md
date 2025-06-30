@@ -55,7 +55,7 @@
 |내용|문서 링크|커밋해시|
 |---|---|:---:|
 |DC모터와 Servo모터 동작 기능 통합 및 핀 라벨링 추가||[`b474df6`](https://github.com/YeonsuJ/Car_control_project/commit/b474df67b9a24d75a08725cf00dbaa94170cabac)|
-|||
+|RF 통신을 통한 roll 값, 악셀 / 브레이크 버튼 눌림 시간 송수신 및 실시간 서보모터 조향 구현 (m3)|[M3_RF_Communication.md](./M3_RF_Communication.md)|[`cbc1803`](https://github.com/YeonsuJ/Car_control_project/commit/cbc18035c71e6f3c50977fd6d9abb157786e36d2)|
 
 ---
 
