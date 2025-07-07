@@ -27,7 +27,7 @@ extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
-#include "stm32f4xx_hal.h"
+#include "stm32f1xx_hal.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -57,28 +57,31 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define Servo_Out_Pin GPIO_PIN_1
-#define Servo_Out_GPIO_Port GPIOA
-#define OLED_SCL_Pin GPIO_PIN_10
+#define L298N_IN1_Pin GPIO_PIN_0
+#define L298N_IN1_GPIO_Port GPIOA
+#define L298N_IN2_Pin GPIO_PIN_1
+#define L298N_IN2_GPIO_Port GPIOA
+#define SERVO_PWM_Pin GPIO_PIN_2
+#define SERVO_PWM_GPIO_Port GPIOA
+#define CSN_Pin GPIO_PIN_3
+#define CSN_GPIO_Port GPIOA
+#define CE_Pin GPIO_PIN_4
+#define CE_GPIO_Port GPIOA
+#define L298N_ENA_Pin GPIO_PIN_11
+#define L298N_ENA_GPIO_Port GPIOA
+#define IRQ_Pin GPIO_PIN_3
+#define IRQ_GPIO_Port GPIOB
+#define IRQ_EXTI_IRQn EXTI3_IRQn
+#define LED_Pin GPIO_PIN_4
+#define LED_GPIO_Port GPIOB
+#define ENCODER_A_Pin GPIO_PIN_6
+#define ENCODER_A_GPIO_Port GPIOB
+#define ENCODER_B_Pin GPIO_PIN_7
+#define ENCODER_B_GPIO_Port GPIOB
+#define OLED_SCL_Pin GPIO_PIN_8
 #define OLED_SCL_GPIO_Port GPIOB
-#define Encoder_A_Pin GPIO_PIN_6
-#define Encoder_A_GPIO_Port GPIOC
-#define Encoder_B_Pin GPIO_PIN_7
-#define Encoder_B_GPIO_Port GPIOC
-#define TMS_Pin GPIO_PIN_13
-#define TMS_GPIO_Port GPIOA
-#define TCK_Pin GPIO_PIN_14
-#define TCK_GPIO_Port GPIOA
-#define OLED_SDA_Pin GPIO_PIN_12
-#define OLED_SDA_GPIO_Port GPIOC
-#define SWO_Pin GPIO_PIN_3
-#define SWO_GPIO_Port GPIOB
-#define L298N_IN1_Pin GPIO_PIN_4
-#define L298N_IN1_GPIO_Port GPIOB
-#define L298N_IN2_Pin GPIO_PIN_5
-#define L298N_IN2_GPIO_Port GPIOB
-#define L298N_ENA_Pin GPIO_PIN_8
-#define L298N_ENA_GPIO_Port GPIOB
+#define OLED_SDA_Pin GPIO_PIN_9
+#define OLED_SDA_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
