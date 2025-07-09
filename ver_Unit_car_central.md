@@ -18,4 +18,4 @@
 ## 버전 히스토리
 | 버전 | 날짜 | 변경 내용 |
 |----------|--------------|-----------|
-| [`central_v1.0.0`](https://github.com/YeonsuJ/Car_control_project/commit/087c00a452b5e8d1e8889b24831789548ee6a3f0) | 2025-07-08 | M3로 변경 및 RF 송신 기반 DC, Servo모터 제어 통합 (v1.0.0)|
+| [`central_v1.0.0`](https://github.com/YeonsuJ/Car_control_project/commit/087c00a452b5e8d1e8889b24831789548ee6a3f0) | 2025-07-08 | M3로 변경 및 RF 수신 기반 DC, Servo모터 제어 통합 (v1.0.0)|
