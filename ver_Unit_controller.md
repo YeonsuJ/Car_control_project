@@ -17,3 +17,4 @@
 ## 버전 히스토리
 | 버전 | 날짜         | 변경 내용 |
 |----------|--------------|-----------|
+| [`controller_v1.0.0`](https://github.com/YeonsuJ/Car_control_project/commit/de77deb8e3d7acceab46b517a5e457805b62f0cb) | 2025-07-08 |  acc, brk, roll 값 기반 RF 송신 → DC/서보 모터 제어 통합 (v1.0.0) |
