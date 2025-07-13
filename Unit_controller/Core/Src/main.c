@@ -35,12 +35,23 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+// MPU6050 구조체 인스턴스 (외부 라이브러리에서 정의)
+MPU6050_t MPU6050;
 
+// 방향 전송값 정의
+typedef enum{
+	LOCKER_FORWARD = 1,
+	LOCKER_BACKWARD = 0
+} LockerDirection;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+// NRF24 페이로드 크기 (byte)
+#define PLD_S 32
 
+// NRF24 송신 주기 (ms)
+#define TRANSMIT_INTERVAL_MS 20
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -51,8 +62,6 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-MPU6050_t MPU6050;
-
 volatile uint8_t accel_pressed = 0;
 volatile uint8_t brake_pressed = 0;
 volatile uint32_t accel_count = 0;   // 20ms 단위
@@ -61,29 +70,30 @@ volatile uint32_t brake_count = 0;   // 20ms 단위
 volatile uint32_t prev_tick_accel = 0;
 volatile uint32_t prev_tick_brake = 0;
 
-uint32_t previousMillis = 0;
-uint32_t currentMillis = 0;
-uint32_t counterOutside = 0; //For testing only
-uint32_t counterInside = 0; //For testing only
+uint8_t tx_addr[5] = {0x45, 0x55, 0x67, 0x10, 0x21};
+uint8_t dataT[PLD_S];  // 전송 버퍼
 
-volatile uint8_t button_pressed = 0;
+uint32_t lastTransmitTick = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-
+void NRF24_Tx_Init(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-#define PLD_S 32
-uint8_t tx_addr[5] = {0x45, 0x55, 0x67, 0x10, 0x21};
-uint8_t dataT[PLD_S];  // 전송 버퍼
-
-uint32_t lastTransmitTick = 0;
-const uint32_t transmitInterval = 20;
-
+// =============================
+// NRF24 송신 패킷 구조 정의
+// -----------------------------
+// Byte 0   : 메시지 식별자 (1)
+// Byte 1~2 : roll (int16_t, 센서 측에서 ×100 배율 인코딩)
+// Byte 3~4 : accel_ms (uint16_t, 엑셀 유지 시간)
+// Byte 5~6 : brake_ms (uint16_t, 브레이크 유지 시간)
+// Byte 7   : direction (0: BACKWARD, 1: FORWARD)
+// 나머지 Byte 8~31 : 예약 or 미사용
+// =============================
 /* USER CODE END 0 */
 
 /**
@@ -121,33 +131,16 @@ int main(void)
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
   SSD1306_Init();
-  while (MPU6050_Init(&hi2c2) == 1);
+
+  // MPU6050 초기화 실패 시 Error_Handler
+  if (MPU6050_Init(&hi2c2) !=0){
+	  Error_Handler();
+  }
+
   HAL_TIM_Base_Start_IT(&htim2);
 
-  csn_high();
-  ce_high();
-  HAL_Delay(5);
-  ce_low();
-
-  nrf24_init();
-  nrf24_stop_listen();  // 송신기이므로 listen 비활성화
-
-  nrf24_auto_ack_all(auto_ack);
-  nrf24_en_ack_pld(disable);
-  nrf24_dpl(disable);
-  nrf24_set_crc(no_crc, _1byte);
-
-  nrf24_tx_pwr(_0dbm);
-  nrf24_data_rate(_1mbps);
-  nrf24_set_channel(90);
-  nrf24_set_addr_width(5);
-  nrf24_set_rx_dpl(0, disable);
-  nrf24_pipe_pld_size(0, PLD_S);
-  nrf24_auto_retr_delay(4);
-  nrf24_auto_retr_limit(10);
-
-  nrf24_open_tx_pipe(tx_addr);
-  ce_high();
+  //NRF24L01 무선 송신 설정
+  NRF24_Tx_Init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -156,11 +149,11 @@ int main(void)
     {
         uint32_t now = HAL_GetTick();
 
-        if (now - lastTransmitTick >= transmitInterval)
+        if (now - lastTransmitTick >= TRANSMIT_INTERVAL_MS)
         {
             lastTransmitTick = now;
 
-            // 1. 자이로센서 데이터 읽기
+            // 1. 자이로센서 데이터 읽기 및 유효성 검사
             MPU6050_Read_All(&hi2c2, &MPU6050);
             float roll = MPU6050.KalmanAngleX;
 
@@ -168,17 +161,24 @@ int main(void)
             memset(dataT, 0, PLD_S);
             dataT[0] = 1;  // 식별자
 
-            // ✅ roll (float → int16_t)
+            // 3. roll (float → int16_t)
             int16_t roll_encoded = (int16_t)(roll * 100.0f);  // 예: 32.53° → 3253
-            memcpy(&dataT[1], &roll_encoded, sizeof(int16_t));  // 1~2 byte
+            memcpy(&dataT[1], &roll_encoded, sizeof(int16_t));  // roll : 1~2 byte
 
-            // ✅ accel_count, brake_count (uint16_t로 압축 전송, 단위: 20ms)
+            // 4. accel_count, brake_count (uint16_t로 압축 전송, 단위: 20ms)
             uint16_t accel_ms = (uint16_t)(accel_count * 20);
             uint16_t brake_ms = (uint16_t)(brake_count * 20);
-            memcpy(&dataT[3], &accel_ms, sizeof(uint16_t));    // 3~4 byte
-            memcpy(&dataT[5], &brake_ms, sizeof(uint16_t));    // 5~6 byte
+            memcpy(&dataT[3], &accel_ms, sizeof(uint16_t));    // accel_ms : 3~4 byte
+            memcpy(&dataT[5], &brake_ms, sizeof(uint16_t));    // brake_ms : 5~6 byte
 
-            // 3. NRF24 전송
+            // 5. 락커 스위치 판별 (PB8: LOCKER_BACKWARD == 0, PB9: LOCKER_FORWARD == 1)
+            // direction : 7 byte
+            if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_9) == GPIO_PIN_RESET)
+                dataT[7] = LOCKER_FORWARD;
+            else
+                dataT[7] = LOCKER_BACKWARD;
+
+            // 6. NRF24 전송
             nrf24_transmit(dataT, PLD_S);
         }
     /* USER CODE END WHILE */
@@ -274,19 +274,36 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     {
         if (accel_pressed) accel_count++;
         if (brake_pressed) brake_count++;
-
-        char buffer1[20], buffer2[20];
-
-//        snprintf(buffer1, sizeof(buffer1), "ACC: %lums", accel_count * 20);
-//        SSD1306_GotoXY(0, 0);
-//        SSD1306_Puts(buffer1, &Font_11x18, 1);
-//
-//        snprintf(buffer2, sizeof(buffer2), "BRK: %lums", brake_count * 20);
-//        SSD1306_GotoXY(0, 20);
-//        SSD1306_Puts(buffer2, &Font_11x18, 1);
-//
-//        SSD1306_UpdateScreen();
     }
+}
+
+// RF 초기화 함수
+void NRF24_Tx_Init(void)
+{
+	csn_high();
+	ce_high();
+	HAL_Delay(5);
+	ce_low();
+
+	nrf24_init();
+	nrf24_stop_listen();  // 송신기이므로 listen 비활성화
+
+	nrf24_auto_ack_all(auto_ack);
+	nrf24_en_ack_pld(disable);
+	nrf24_dpl(disable);
+	nrf24_set_crc(no_crc, _1byte);
+
+	nrf24_tx_pwr(_0dbm);
+	nrf24_data_rate(_1mbps);
+	nrf24_set_channel(90);
+	nrf24_set_addr_width(5);
+	nrf24_set_rx_dpl(0, disable);
+	nrf24_pipe_pld_size(0, PLD_S);
+	nrf24_auto_retr_delay(4);
+	nrf24_auto_retr_limit(10);
+
+	nrf24_open_tx_pipe(tx_addr);
+	ce_high();
 }
 /* USER CODE END 4 */
 
