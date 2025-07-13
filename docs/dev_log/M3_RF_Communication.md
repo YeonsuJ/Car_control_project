@@ -34,7 +34,7 @@
 
 ## 🔌 하드웨어 연결
 
-※ 회로도 이미지를 추후 삽입 예정
+<img src="../wiring_diagram/rf_comm_gyro_button.png" alt="RF통신 배선도" width="700"/>
 
 ---
 
