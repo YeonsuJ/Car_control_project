@@ -71,6 +71,6 @@
 |내용|문서 링크|커밋해시|
 |---|:---:|:---:|
 |M3보드 기반 RF 송/수신 모터 제어 통합 (v1.0.0)|[V1.0.0_RF_MotorCtrl.md](./V1.0.0_RF_MotorCtrl.md)|[`central_v1.0.0`](https://github.com/YeonsuJ/Car_control_project/commit/087c00a452b5e8d1e8889b24831789548ee6a3f0) / [`controller_v1.0.0`](https://github.com/YeonsuJ/Car_control_project/commit/de77deb8e3d7acceab46b517a5e457805b62f0cb)|
-|코드 리팩토링 및 Locekr 스위치 기반 전/후진 기능 추가, <br>DC모터 Encoder 기반 RPM 측정 로직 추가 (v1.1.0)|[V1.0.0_RF_MotorCtrl.md](./V1.0.0_RF_MotorCtrl.md)|[`central_v1.1.0`](https://github.com/YeonsuJ/Car_control_project/commit/94a4a332562ac80192bba8cc971c298cab48cbfd) / [`controller_v1.1.0`](https://github.com/YeonsuJ/Car_control_project/commit/241c4c5877d608a3723825619a0ed84717d12e22)|
+|코드 리팩토링 및 Locekr 스위치 기반 전/후진 기능 추가, <br>DC모터 Encoder 기반 RPM 측정 로직 추가 (v1.1.0)|[V1.1.0_Locker_Encoder.md](./V1.1.0_Locker_Encoder.md)|[`central_v1.1.0`](https://github.com/YeonsuJ/Car_control_project/commit/94a4a332562ac80192bba8cc971c298cab48cbfd) / [`controller_v1.1.0`](https://github.com/YeonsuJ/Car_control_project/commit/241c4c5877d608a3723825619a0ed84717d12e22)|
 
 
