@@ -228,6 +228,21 @@ git reset HEAD
 git add .
 git commit -m "특정 커밋 프로젝트로 덮어쓰기 완료"
 ```
+---
+
+## 외부 zip 프로젝트를 원하는 브랜치에 연동 후 commit & push
+ex) Unit_controller
+1. 깃헙 원격에서 마지막 commit zip 다운로드
+2. main.c나 ioc 설정, 파일 추가 등 작업, 저장
+3. Unit_controller 프로젝트 내부의 파일들 복사
+4. git > Car_contol_project > bash > git checkout Unit_controller 이동
+5. Car_control_project 내부의 Unit_controller 폴더안에 복붙으로 덮어쓰기
+6. bash에서 git status로 확인
+7. git add Unit_controller/ 로 하위 폴더 추가
+8.  git commit -m "Locker 스위치 기반 전/후진 기능 추가 (버전 적기)"
+9. git pull --rebase origin Unit_controller (non-fast-forward 방지)
+10. git push origin Unit_controller 
+
 
 ---
 
