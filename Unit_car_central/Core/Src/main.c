@@ -18,20 +18,18 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "i2c.h"
+#include "can.h"
 #include "spi.h"
 #include "tim.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "fonts.h"
-#include "ssd1306.h"
-#include "mpu6050.h"
 #include "NRF24.h"
 #include "NRF24_reg_addresses.h"
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -88,6 +86,11 @@ uint8_t rx_buffer[PLD_S] = {0};
 // 모터 RPM
 float motor_rpm = 0;
 
+// can 수신을 위한 필터 및 수신 버퍼 구성
+CAN_FilterTypeDef sFilterConfig;
+CAN_RxHeaderTypeDef RxHeader;
+uint8_t RxData[8];
+
 // (95) encoder debug 시 활성화
 //uint8_t encoder_direction = 0;
 
@@ -103,13 +106,14 @@ void Parse_RF_Data(uint8_t* buffer);
 void NRF24_Rx_Init(void);
 void Update_Motor_RPM(void);
 void OLED_Display_Status(float roll, uint16_t accel_ms, uint16_t brake_ms, float motor_rpm, MotorDirection motor_direction);
-
+void CAN_Filter_Config(void);
+void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 // =============================
-// NRF24 수신 패킷 구조 정의
+// NRF24 수신(Rx) 패킷 구조 정의
 // -----------------------------
 // Byte 0   : 메시지 식별자 (1이면 주행 명령 수신)
 // Byte 1~2 : roll (int16_t, 센서 측에서 ×100 배율 인코딩)
@@ -117,6 +121,19 @@ void OLED_Display_Status(float roll, uint16_t accel_ms, uint16_t brake_ms, float
 // Byte 5~6 : brake_ms (uint16_t, 브레이크 유지 시간)
 // Byte 7   : direction (0: BACKWARD, 1: FORWARD)
 // 나머지 Byte 8~31 : 예약 or 미사용
+// =============================
+// CAN 수신(Rx) 패킷 구조 정의
+// -----------------------------
+// ▶ CAN 수신 ID:
+//   - StdId: 0x6A5 (슬레이브 → 마스터)
+//   - 필터 모드: 11비트 표준 ID, 마스크 0x7FF (전비트 일치)
+// ▶ 수신 헤더 (RxHeader):
+//   - RxHeader.StdId : 송신 측 ID 확인용 (0x6A5 expected)
+//   - RxHeader.DLC   : 데이터 길이 (보통 1)
+//   - 그 외 IDE, RTR 등은 현재 사용 안 함
+// ▶ 수신 데이터 (RxData):
+//   - RxData[0] : 거리 조건 결과 (uint8_t, 거리값에따라 1 or 0 수신)
+//   - RxData[1] ~ RxData[7] : 예비, 현재 미사용
 // =============================
 /* USER CODE END 0 */
 
@@ -149,24 +166,26 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_I2C1_Init();
-  MX_I2C2_Init();
   MX_TIM2_Init();
   MX_SPI1_Init();
   MX_TIM1_Init();
   MX_TIM4_Init();
+  MX_CAN_Init();
   /* USER CODE BEGIN 2 */
 
-  // 1. 주변 장치 초기화
-  SSD1306_Init();
+  // 1. Can 시작, 필터 설정 및 인터럽트 등록
+  HAL_CAN_Start(&hcan);
+  CAN_Filter_Config();
+
+  // 2. 주변 장치 초기화
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3); // 서보 PWM 시작
   HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL); //encoder 시작
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4); // DC모터 PWM 시작
 
-  // 2. 초기 모터 방향 설정 (실제 제어 핀 설정)
+  // 3. 초기 모터 방향 설정 (실제 제어 핀 설정)
   MOTOR_FORWARD();
 
-  // 3. NRF24 설정 (안정성을 위해 초기화 실패 처리 루틴 추가)
+  // 4. NRF24 설정 (안정성을 위해 초기화 실패 처리 루틴 추가)
   NRF24_Rx_Init();
 
   /* USER CODE END 2 */
@@ -190,8 +209,8 @@ int main(void)
             uint16_t accel_ms = received_accel_ms;
             uint16_t brake_ms = received_brake_ms;
 
-            // 4. OLED 출력
-            OLED_Display_Status(roll, accel_ms, brake_ms, motor_rpm, motor_direction);
+//            // 4. OLED 출력 (디버깅용)
+//            OLED_Display_Status(roll, accel_ms, brake_ms, motor_rpm, motor_direction);
 
 	        // 5. 서보 및 DC 모터 제어
             Control_Servo(roll);
@@ -401,38 +420,68 @@ void Update_Motor_RPM(void)
 
 }
 
-// OLED 출력 함수
-void OLED_Display_Status(float roll, uint16_t accel_ms, uint16_t brake_ms, float motor_rpm, MotorDirection motor_direction)
+// can 필터 설정 및 인터럽트 활성화 함수
+void CAN_Filter_Config(void)
 {
-	SSD1306_Clear();  // 여기에서만 Clear (화면 깜빡임 최소화)
+	// Configure the filter
+	sFilterConfig.FilterActivation = CAN_FILTER_ENABLE;
+	sFilterConfig.FilterFIFOAssignment = CAN_FILTER_FIFO1;
+	sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
+	sFilterConfig.FilterIdHigh = 0x6A5<<5;
+	sFilterConfig.FilterIdLow = 0;
+	sFilterConfig.FilterMaskIdHigh = 0x7FF<<5; // SET 0 to unfilter
+	sFilterConfig.FilterMaskIdLow = 0;
+	sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
 
-	char buffer[32];
+	if (HAL_CAN_ConfigFilter(&hcan, &sFilterConfig) != HAL_OK)
+	        Error_Handler(); // 실패 시 무한 루프 등 처리
 
-	SSD1306_GotoXY(0, 0);
-	snprintf(buffer, sizeof(buffer), "Roll: %.2f", roll);
-	SSD1306_Puts(buffer, &Font_7x10, 1);
-
-	SSD1306_GotoXY(0, 10);
-	snprintf(buffer, sizeof(buffer), "ACC: %ums", accel_ms);
-	SSD1306_Puts(buffer, &Font_7x10, 1);
-
-	SSD1306_GotoXY(0, 20);
-	snprintf(buffer, sizeof(buffer), "BRK: %ums", brake_ms);
-	SSD1306_Puts(buffer, &Font_7x10, 1);
-
-	SSD1306_GotoXY(0, 30);
-	snprintf(buffer, sizeof(buffer), "RPM: %.1f", motor_rpm);
-	SSD1306_Puts(buffer, &Font_7x10, 1);
-
-	SSD1306_GotoXY(0, 40);
-	snprintf(buffer, sizeof(buffer), "DIR: %s", motor_direction == DIRECTION_FORWARD ? "FWD" : "BWD");
-	SSD1306_Puts(buffer, &Font_7x10, 1);
-
-	SSD1306_UpdateScreen();
+	// Activate the notification
+	if (HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO1_MSG_PENDING) != HAL_OK)
+	        Error_Handler(); // 실패 시 처리
 }
 
+// CAN 수신 인터럽트 콜백 함수 (FIFO1)
+void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
+{
+  HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO1, &RxHeader, RxData);
 
+  // 거리 기반 신호: 0 → 정지, 1 → 동작
+    if (RxData[0] == 1)
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);  // 햅틱 진동모터 ON
+    else if (RxData[0] == 0)
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);  // 햅틱 진동모터 OFF
+}
 
+//// OLED 출력 함수 (디버깅용)
+//void OLED_Display_Status(float roll, uint16_t accel_ms, uint16_t brake_ms, float motor_rpm, MotorDirection motor_direction)
+//{
+//	SSD1306_Clear();  // 여기에서만 Clear (화면 깜빡임 최소화)
+//
+//	char buffer[32];
+//
+//	SSD1306_GotoXY(0, 0);
+//	snprintf(buffer, sizeof(buffer), "Roll: %.2f", roll);
+//	SSD1306_Puts(buffer, &Font_7x10, 1);
+//
+//	SSD1306_GotoXY(0, 10);
+//	snprintf(buffer, sizeof(buffer), "ACC: %ums", accel_ms);
+//	SSD1306_Puts(buffer, &Font_7x10, 1);
+//
+//	SSD1306_GotoXY(0, 20);
+//	snprintf(buffer, sizeof(buffer), "BRK: %ums", brake_ms);
+//	SSD1306_Puts(buffer, &Font_7x10, 1);
+//
+//	SSD1306_GotoXY(0, 30);
+//	snprintf(buffer, sizeof(buffer), "RPM: %.1f", motor_rpm);
+//	SSD1306_Puts(buffer, &Font_7x10, 1);
+//
+//	SSD1306_GotoXY(0, 40);
+//	snprintf(buffer, sizeof(buffer), "DIR: %s", motor_direction == DIRECTION_FORWARD ? "FWD" : "BWD");
+//	SSD1306_Puts(buffer, &Font_7x10, 1);
+//
+//	SSD1306_UpdateScreen();
+//}
 /* USER CODE END 4 */
 
 /**
