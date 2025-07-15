@@ -12,7 +12,7 @@
 | [`ad9f4bc`](https://github.com/YeonsuJ/Car_control_project/commit/ad9f4bc341844dbb1dcecefefb23643b87a2f076) | 2025-06-11 | 로커 스위치를 이용한 DC 모터 전/후진 제어 및 OLED 실시간 상태 표시 기능 추가|
 | [`3c3b16f`](https://github.com/YeonsuJ/Car_control_project/commit/3c3b16f653379466fd9c0d39f7b53c472481e6a6) | 2025-06-22 | Shift-lock 시스템 적용: DC모터 전/후진 전환 시 브레이크 입력 필수 조건 추가|
 | [`b474df6`](https://github.com/YeonsuJ/Car_control_project/commit/b474df67b9a24d75a08725cf00dbaa94170cabac) | 2025-06-27 | DC모터와 Servo모터 동작 기능 통합 및 핀 라벨링 추가|
-| [`2da04ab`](https://github.com/YeonsuJ/Car_control_project/commit/2da04ab6ffaecc1a9f892ea96c2d268be7718beb) | 2025-07-15 | 초음파 거리값 기반 car_sensor → car_central 간 CAN 햅틱 제어 추가|
+| [`2da04ab`](https://github.com/YeonsuJ/Car_control_project/commit/2da04ab6ffaecc1a9f892ea96c2d268be7718beb) | 2025-07-15 | 초음파 거리값 기반 car_sensor → car_central 간 CAN 햅틱 제어 추가<br> (v1.2.0-beta : RF 양방향 추가 전)|
 
 ---
 
