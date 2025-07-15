@@ -57,6 +57,14 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define Rear_Trig_Pin GPIO_PIN_8
+#define Rear_Trig_GPIO_Port GPIOA
+#define Front_Trig_Pin GPIO_PIN_9
+#define Front_Trig_GPIO_Port GPIOA
+#define Front_Echo_Pin GPIO_PIN_6
+#define Front_Echo_GPIO_Port GPIOB
+#define Rear_Echo_Pin GPIO_PIN_7
+#define Rear_Echo_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
