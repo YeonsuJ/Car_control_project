@@ -13,4 +13,4 @@
 ## 버전 히스토리
 | 버전 | 날짜   | 변경 내용 |
 |----------|--------------|-----------|
-| [`sensor_v1.0.0`](https://github.com/YeonsuJ/Car_control_project/commit/13f38c18cb6364108f1dbb893375f56113965320) | 2025-07-15 | CAN 송신 기반 초음파센서 -> 햅틱센서 기능 통합 (v1.0.0)|
+| [`sensor_v1.0.0`](https://github.com/YeonsuJ/Car_control_project/commit/13f38c18cb6364108f1dbb893375f56113965320) | 2025-07-17 | CAN 송신 기반 초음파센서 -> 햅틱센서 기능 통합 (v1.0.0)|
