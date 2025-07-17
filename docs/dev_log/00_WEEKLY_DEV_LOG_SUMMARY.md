@@ -63,7 +63,7 @@
 |내용|문서 링크|커밋해시|
 |---|:---:|:---:|
 |CAN 컨트롤러의 루프백 모드를 활성화하여 내부 송수신 테스트||
-|CAN 통신 노말모드 기반 송/수신 초기 기능 구현 (m3)|[Can_comm.md](./Can_comm.md)|[`RX`](https://github.com/YeonsuJ/Car_control_project/commit/89800bed5bbd43df382bfc1d63d63a506a9933f4) / [`TX`](https://github.com/YeonsuJ/Car_control_project/commit/e1316b007e2b4ca462092e7ce0a50db136938af6)|
+|CAN 통신 노말모드 기반 송/수신 초기 기능 구현 (m3)|[Can_Communication.md](./Can_comm.md)|[`RX`](https://github.com/YeonsuJ/Car_control_project/commit/89800bed5bbd43df382bfc1d63d63a506a9933f4) / [`TX`](https://github.com/YeonsuJ/Car_control_project/commit/e1316b007e2b4ca462092e7ce0a50db136938af6)|
 
 ---
 
