@@ -78,4 +78,5 @@
 ## 10주차 (25-07-14 ~ 25-07-20)
 |내용|문서 링크|커밋해시|
 |---|:---:|:---:|
-|- ACK 페이로드 기반 RF 양방향 송수신 구현 (v1.5.0)<br>- CAN 송/수신 초음파센서 -> 햅틱센서 제어 통합(v1.0.0)|[null.md](./null.md)|[`controller_v1.5.0`](https://github.com/YeonsuJ/Car_control_project/commit/0745e3354e6c7a4ae12c31953c2b0a166a373d1a) / [`central_v1.5.0`](https://github.com/YeonsuJ/Car_control_project/commit/fb063337c0dd13055ecf7afc8d4cca3d3b347613) / [`sensor_v1.0.0`](https://github.com/YeonsuJ/Car_control_project/commit/13f38c18cb6364108f1dbb893375f56113965320) / [`status_v1.0.0`](https://github.com/YeonsuJ/Car_control_project/commit/d7810ab06a289a489a91285c02ddfea00daa1e14)||
+|ACK 페이로드 기반 RF 양방향 송수신 구현|[null.md](./null.md)|[`controller_v1.5.0`](https://github.com/YeonsuJ/Car_control_project/commit/0745e3354e6c7a4ae12c31953c2b0a166a373d1a) / [`central_v1.5.0`](https://github.com/YeonsuJ/Car_control_project/commit/fb063337c0dd13055ecf7afc8d4cca3d3b347613)|
+|CAN 송/수신 초음파센서 -> 햅틱센서 제어 통합|[null.md](./null.md)|[`central_v1.5.0`](https://github.com/YeonsuJ/Car_control_project/commit/fb063337c0dd13055ecf7afc8d4cca3d3b347613) / [`sensor_v1.0.0`](https://github.com/YeonsuJ/Car_control_project/commit/13f38c18cb6364108f1dbb893375f56113965320) / [`status_v1.0.0`](https://github.com/YeonsuJ/Car_control_project/commit/d7810ab06a289a489a91285c02ddfea00daa1e14)|
