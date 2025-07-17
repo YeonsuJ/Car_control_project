@@ -13,3 +13,4 @@
 ## 버전 히스토리
 | 버전 | 날짜         | 변경 내용 |
 |----------|--------------|-----------|
+| [`status_v1.0.0`](https://github.com/YeonsuJ/Car_control_project/commit/d7810ab06a289a489a91285c02ddfea00daa1e14) | 2025-07-17 | CAN 수신 기반 초음파센서 -> OLED 디버깅 기능 통합 (v1.0.0)|
