@@ -46,7 +46,8 @@
 #define TICKS_PER_REV (PPR * GEAR_RATIO * 4)
 
 // NRF24 수신 페이로드 크기 정의 (Byte)
-#define PLD_S 32
+#define RX_PAYLOAD_SIZE 32
+#define ACK_PAYLOAD_SIZE 2
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -80,8 +81,11 @@ volatile MotorDirection motor_direction = DIRECTION_FORWARD;
 volatile uint16_t received_accel_ms = 0;
 volatile uint16_t received_brake_ms = 0;
 volatile float received_roll = 0.0f;
-volatile uint8_t new_data_flag = 0;
-uint8_t rx_buffer[PLD_S] = {0};
+// volatile uint8_t new_data_flag = 0; // 이 플래그는 더 이상 사용하지 않음
+uint8_t rx_buffer[RX_PAYLOAD_SIZE] = {0};
+
+// ★★★★★ 여기를 추가하세요 ★★★★★
+volatile uint8_t nrf_irq_flag = 0;
 
 // 모터 RPM
 float motor_rpm = 0;
@@ -90,9 +94,7 @@ float motor_rpm = 0;
 CAN_FilterTypeDef sFilterConfig;
 CAN_RxHeaderTypeDef RxHeader;
 uint8_t RxData[8];
-
-// (95) encoder debug 시 활성화
-//uint8_t encoder_direction = 0;
+volatile uint8_t can_distance_signal = 0;
 
 /* USER CODE END PV */
 
@@ -194,28 +196,50 @@ int main(void)
   /* USER CODE BEGIN WHILE */
     while (1)
     {
-    	// 1. 모터 RPM 계산
-    	Update_Motor_RPM();
+       // 1. 모터 RPM 계산
+       Update_Motor_RPM();
 
-		// 2. 모터 방향 반영 (변화 시만)
-		Update_Motor_Direction(motor_direction);
+      // 2. 모터 방향 반영 (변화 시만)
+      Update_Motor_Direction(motor_direction);
 
-		// 3. RF 수신 처리 플래그 확인
-        if (new_data_flag)
-        {
-            new_data_flag = 0;
+      // 3. RF 수신 처리 플래그 확인
+       if (nrf_irq_flag)
+       {
+           nrf_irq_flag = 0; // 플래그 즉시 초기화
+           uint8_t status = nrf24_r_status();
 
-            float roll = received_roll;
-            uint16_t accel_ms = received_accel_ms;
-            uint16_t brake_ms = received_brake_ms;
+           if (status & (1 << RX_DR)) // 데이터 수신 인터럽트 발생 시
+           {
+               // 2-1. 데이터 수신 및 파싱
+               nrf24_receive(rx_buffer, RX_PAYLOAD_SIZE);
 
-//            // 4. OLED 출력 (디버깅용)
-//            OLED_Display_Status(roll, accel_ms, brake_ms, motor_rpm, motor_direction);
+               // 데이터 파싱
+               if (rx_buffer[0] == 1)
+               {
+                   int16_t roll_encoded = 0;
+                   memcpy(&roll_encoded, &rx_buffer[1], sizeof(int16_t));
+                   received_roll = ((float)roll_encoded) / 100.0f;
 
-	        // 5. 서보 및 DC 모터 제어
-            Control_Servo(roll);
-            Control_DC_Motor(accel_ms, brake_ms);
-        }
+                   memcpy((void*)&received_accel_ms, &rx_buffer[3], sizeof(uint16_t));
+                   memcpy((void*)&received_brake_ms, &rx_buffer[5], sizeof(uint16_t));
+
+                   motor_direction = (MotorDirection)rx_buffer[7];
+               }
+
+               // 2-2. 조건부 ACK 페이로드 응답
+               uint8_t ack_response[ACK_PAYLOAD_SIZE] = {0};
+               if (can_distance_signal == 1)
+               {
+                   ack_response[0] = 1;
+               }
+               nrf24_transmit_rx_ack_pld(1, ack_response, ACK_PAYLOAD_SIZE);
+
+               nrf24_clear_rx_dr();
+           }
+       }
+       Control_Servo(received_roll);
+       Control_DC_Motor(received_accel_ms, received_brake_ms);
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -267,78 +291,62 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
     if (GPIO_Pin == GPIO_PIN_3)  // IRQ 핀
     {
-        if (nrf24_data_available())
-        {
-            nrf24_receive(rx_buffer, PLD_S);
-
-            Parse_RF_Data(rx_buffer);
-        }
+            nrf_irq_flag = 1;
     }
 }
 
-// RF 송신 데이터 파싱 함수
-void Parse_RF_Data(uint8_t* rx_buffer)
-{
-	if (rx_buffer[0] == 1)
-	{
-		int16_t roll_encoded = 0;
-		memcpy(&roll_encoded, &rx_buffer[1], sizeof(int16_t));
-		received_roll = ((float)roll_encoded) / 100.0f;
-
-		memcpy((void*)&received_accel_ms, &rx_buffer[3], sizeof(uint16_t));
-		memcpy((void*)&received_brake_ms, &rx_buffer[5], sizeof(uint16_t));
-
-		motor_direction = (MotorDirection)rx_buffer[7];  // enum 적용, forward : 1, backward : 0
-
-		new_data_flag = 1;
-	}
-}
 
 // RF 초기화 함수
 void NRF24_Rx_Init(void)
 {
-	csn_high();
-	ce_high();
-	HAL_Delay(5);
-	ce_low();
+      static uint8_t rx_addr[5] = {0x45, 0x55, 0x67, 0x10, 0x21};
 
-	nrf24_init();
-	nrf24_auto_ack_all(auto_ack);
-	nrf24_en_ack_pld(disable);
-	nrf24_dpl(disable);
-	nrf24_set_crc(no_crc, _1byte);
+       csn_high();
+       HAL_Delay(5);
+       ce_low();
 
-	nrf24_tx_pwr(_0dbm);
-	nrf24_data_rate(_1mbps);
-	nrf24_set_channel(90);
-	nrf24_set_addr_width(5);
-	nrf24_set_rx_dpl(0, disable);
-	nrf24_pipe_pld_size(0, PLD_S);
-	nrf24_auto_retr_delay(4);
-	nrf24_auto_retr_limit(10);
+       nrf24_init();
 
-	static uint8_t rx_addr[5] = {0x45, 0x55, 0x67, 0x10, 0x21};
-	nrf24_open_rx_pipe(0, rx_addr);
-	nrf24_listen();   // 수신 대기 시작
+       // PTX와 동일하게 ACK 페이로드 설정
+       nrf24_auto_ack_all(auto_ack);
+       nrf24_en_ack_pld(enable);
+       nrf24_dpl(disable); // 고정 크기 페이로드 사용
+       nrf24_set_crc(enable, _1byte);
+
+       nrf24_tx_pwr(_0dbm);
+       nrf24_data_rate(_1mbps);
+       nrf24_set_channel(90);
+       nrf24_set_addr_width(5);
+       nrf24_auto_retr_delay(4);
+       nrf24_auto_retr_limit(10);
+
+       // 파이프 설정
+       nrf24_open_rx_pipe(1, rx_addr); // Pipe 1로 주 데이터 수신
+
+       // 파이프별 페이로드 크기 설정
+       nrf24_pipe_pld_size(1, RX_PAYLOAD_SIZE);    // Pipe 1은 32바이트
+       nrf24_pipe_pld_size(0, ACK_PAYLOAD_SIZE);   // Pipe 0은 응답용 2바이트
+
+       nrf24_listen(); // 수신 대기 시작
 }
 
 // 서보 모터 제어 함수
 void Control_Servo(float roll)
 {
-	if (roll < -90.0f) roll = -90.0f;
-	if (roll >  90.0f) roll = 90.0f;
+   if (roll < -90.0f) roll = -90.0f;
+   if (roll >  90.0f) roll = 90.0f;
 
-	// roll [-90 ~ 90] → angle [0 ~ 180]
-	float angle = roll + 90.0f;
+   // roll [-90 ~ 90] → angle [0 ~ 180]
+   float angle = roll + 90.0f;
 
-	// servo pwm : 우회전최대 = 1200, 중립 = 1550, 좌회전최대 = 1900
-	uint16_t pwm_servo = (uint16_t)(1200 + (angle / 180.0f) * (1900-1200));
+   // servo pwm : 우회전최대 = 1200, 중립 = 1550, 좌회전최대 = 1900
+   uint16_t pwm_servo = (uint16_t)(1200 + (angle / 180.0f) * (1900-1200));
 
-	// 출력 제한 (안정성 보장)
-	if (pwm_servo < 1200) pwm_servo = 1200;
-	if (pwm_servo > 1900) pwm_servo = 1900;
+   // 출력 제한 (안정성 보장)
+   if (pwm_servo < 1200) pwm_servo = 1200;
+   if (pwm_servo > 1900) pwm_servo = 1900;
 
-	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, pwm_servo);
+   __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, pwm_servo);
 }
 
 // DC 모터 제어 함수
@@ -352,7 +360,7 @@ void Control_DC_Motor(uint16_t accel_ms, uint16_t brake_ms)
     // 1. 브레이크
     if (brake_ms > 0)
     {
-    	duty -= brake_step;
+       duty -= brake_step;
     }
     // 2. 가속 입력 처리
     else if (accel_ms > 0)
@@ -395,50 +403,49 @@ void Update_Motor_Direction(MotorDirection motor_dir)
 // Encoder 모터 RPM 계산 함수
 void Update_Motor_RPM(void)
 {
-	static int16_t last_encoder = 0;
-	static uint32_t last_rpm_tick =0;
+   static int16_t last_encoder = 0;
+   static uint32_t last_rpm_tick =0;
 
-	uint32_t now = HAL_GetTick();
+   uint32_t now = HAL_GetTick();
 
-	// 100ms마다 계산
-	if (now - last_rpm_tick >= 100)
-	{
-		last_rpm_tick = now;
+   // 100ms마다 계산
+   if (now - last_rpm_tick >= 100)
+   {
+      last_rpm_tick = now;
 
-		int16_t enc = (int16_t)__HAL_TIM_GET_COUNTER(&htim4);
-		int16_t delta = (int16_t)(enc - last_encoder);
-		last_encoder = enc;
+      int16_t enc = (int16_t)__HAL_TIM_GET_COUNTER(&htim4);
+      int16_t delta = (int16_t)(enc - last_encoder);
+      last_encoder = enc;
 
-//			// 방향 추정 encoder debug시 필요
-//			if (delta > 0) encoder_direction = 1;     // FWD
-//			else if (delta < 0) encoder_direction = 0; // REV
+//         // 방향 추정 encoder debug시 필요
+//         if (delta > 0) encoder_direction = 1;     // FWD
+//         else if (delta < 0) encoder_direction = 0; // REV
 
-		// RPM 계산 (100ms 기준 → 10회/초 → ×10 ×60) (math.h -> fabsf : 절댓값)
-		motor_rpm = fabsf(((float)delta / TICKS_PER_REV) * 10.0f * 60.0f);
-
-	}
+      // RPM 계산 (100ms 기준 → 10회/초 → ×10 ×60) (math.h -> fabsf : 절댓값)
+      motor_rpm = fabsf(((float)delta / TICKS_PER_REV) * 10.0f * 60.0f);
+   }
 
 }
 
 // can 필터 설정 및 인터럽트 활성화 함수
 void CAN_Filter_Config(void)
 {
-	// Configure the filter
-	sFilterConfig.FilterActivation = CAN_FILTER_ENABLE;
-	sFilterConfig.FilterFIFOAssignment = CAN_FILTER_FIFO1;
-	sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
-	sFilterConfig.FilterIdHigh = 0x6A5<<5;
-	sFilterConfig.FilterIdLow = 0;
-	sFilterConfig.FilterMaskIdHigh = 0x7FF<<5; // SET 0 to unfilter
-	sFilterConfig.FilterMaskIdLow = 0;
-	sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
+   // Configure the filter
+   sFilterConfig.FilterActivation = CAN_FILTER_ENABLE;
+   sFilterConfig.FilterFIFOAssignment = CAN_FILTER_FIFO1;
+   sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
+   sFilterConfig.FilterIdHigh = 0x6A5<<5;
+   sFilterConfig.FilterIdLow = 0;
+   sFilterConfig.FilterMaskIdHigh = 0x7FF<<5; // SET 0 to unfilter
+   sFilterConfig.FilterMaskIdLow = 0;
+   sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
 
-	if (HAL_CAN_ConfigFilter(&hcan, &sFilterConfig) != HAL_OK)
-	        Error_Handler(); // 실패 시 무한 루프 등 처리
+   if (HAL_CAN_ConfigFilter(&hcan, &sFilterConfig) != HAL_OK)
+           Error_Handler(); // 실패 시 무한 루프 등 처리
 
-	// Activate the notification
-	if (HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO1_MSG_PENDING) != HAL_OK)
-	        Error_Handler(); // 실패 시 처리
+   // Activate the notification
+   if (HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO1_MSG_PENDING) != HAL_OK)
+           Error_Handler(); // 실패 시 처리
 }
 
 // CAN 수신 인터럽트 콜백 함수 (FIFO1)
@@ -446,41 +453,44 @@ void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
   HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO1, &RxHeader, RxData);
 
-  // 거리 기반 신호: 0 → 정지, 1 → 동작
-    if (RxData[0] == 1)
-      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);  // 햅틱 진동모터 ON
-    else if (RxData[0] == 0)
-      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);  // 햅틱 진동모터 OFF
+  // 1. 햅틱 모터는 즉시 제어
+  if (RxData[0] == 1)
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
+  else
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
+
+  // 2. ACK 페이로드에 보낼 신호를 안전한 변수에 저장
+  can_distance_signal = RxData[0];
 }
 
 //// OLED 출력 함수 (디버깅용)
 //void OLED_Display_Status(float roll, uint16_t accel_ms, uint16_t brake_ms, float motor_rpm, MotorDirection motor_direction)
 //{
-//	SSD1306_Clear();  // 여기에서만 Clear (화면 깜빡임 최소화)
+//   SSD1306_Clear();  // 여기에서만 Clear (화면 깜빡임 최소화)
 //
-//	char buffer[32];
+//   char buffer[32];
 //
-//	SSD1306_GotoXY(0, 0);
-//	snprintf(buffer, sizeof(buffer), "Roll: %.2f", roll);
-//	SSD1306_Puts(buffer, &Font_7x10, 1);
+//   SSD1306_GotoXY(0, 0);
+//   snprintf(buffer, sizeof(buffer), "Roll: %.2f", roll);
+//   SSD1306_Puts(buffer, &Font_7x10, 1);
 //
-//	SSD1306_GotoXY(0, 10);
-//	snprintf(buffer, sizeof(buffer), "ACC: %ums", accel_ms);
-//	SSD1306_Puts(buffer, &Font_7x10, 1);
+//   SSD1306_GotoXY(0, 10);
+//   snprintf(buffer, sizeof(buffer), "ACC: %ums", accel_ms);
+//   SSD1306_Puts(buffer, &Font_7x10, 1);
 //
-//	SSD1306_GotoXY(0, 20);
-//	snprintf(buffer, sizeof(buffer), "BRK: %ums", brake_ms);
-//	SSD1306_Puts(buffer, &Font_7x10, 1);
+//   SSD1306_GotoXY(0, 20);
+//   snprintf(buffer, sizeof(buffer), "BRK: %ums", brake_ms);
+//   SSD1306_Puts(buffer, &Font_7x10, 1);
 //
-//	SSD1306_GotoXY(0, 30);
-//	snprintf(buffer, sizeof(buffer), "RPM: %.1f", motor_rpm);
-//	SSD1306_Puts(buffer, &Font_7x10, 1);
+//   SSD1306_GotoXY(0, 30);
+//   snprintf(buffer, sizeof(buffer), "RPM: %.1f", motor_rpm);
+//   SSD1306_Puts(buffer, &Font_7x10, 1);
 //
-//	SSD1306_GotoXY(0, 40);
-//	snprintf(buffer, sizeof(buffer), "DIR: %s", motor_direction == DIRECTION_FORWARD ? "FWD" : "BWD");
-//	SSD1306_Puts(buffer, &Font_7x10, 1);
+//   SSD1306_GotoXY(0, 40);
+//   snprintf(buffer, sizeof(buffer), "DIR: %s", motor_direction == DIRECTION_FORWARD ? "FWD" : "BWD");
+//   SSD1306_Puts(buffer, &Font_7x10, 1);
 //
-//	SSD1306_UpdateScreen();
+//   SSD1306_UpdateScreen();
 //}
 /* USER CODE END 4 */
 
