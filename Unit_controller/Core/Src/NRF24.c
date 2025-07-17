@@ -572,3 +572,10 @@ void nrf24_init(void){
 	nrf24_clear_tx_ds();
 	nrf24_clear_max_rt();
 }
+
+void nrf24_clear_interrupts(void)
+{
+    /* RX_DR · TX_DS · MAX_RT 비트를 1로 써서 모두 클리어 */
+    uint8_t status = (1 << RX_DR) | (1 << TX_DS) | (1 << MAX_RT);
+    nrf24_w_reg(STATUS, &status, 1);
+}

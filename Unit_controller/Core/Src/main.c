@@ -49,7 +49,7 @@ typedef enum{
 /* USER CODE BEGIN PD */
 // NRF24 페이로드 크기 (byte)
 #define PLD_S 32
-
+#define ACK_PAYLOAD_SIZE 2
 // NRF24 송신 주기 (ms)
 #define TRANSMIT_INTERVAL_MS 20
 /* USER CODE END PD */
@@ -74,6 +74,13 @@ uint8_t tx_addr[5] = {0x45, 0x55, 0x67, 0x10, 0x21};
 uint8_t dataT[PLD_S];  // 전송 버퍼
 
 uint32_t lastTransmitTick = 0;
+
+uint8_t ack_payload[ACK_PAYLOAD_SIZE] = {0};
+volatile uint8_t nrf_irq_flag = 0;
+
+char oled_buffer[20];
+float final_rpm = 0.0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -180,6 +187,32 @@ int main(void)
 
             // 6. NRF24 전송
             nrf24_transmit(dataT, PLD_S);
+            HAL_Delay(5);
+
+            if (nrf_irq_flag)
+                    {
+                        nrf_irq_flag = 0; // 플래그 초기화
+                        uint8_t status = nrf24_r_status();
+
+                        if (status & (1 << TX_DS)) // 송신 성공 (ACK 수신)
+                        {
+                            if (nrf24_data_available())
+                            {
+                                nrf24_receive(ack_payload, ACK_PAYLOAD_SIZE);
+                                if (ack_payload[0] == 1)
+                                	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
+                                else
+                                	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
+
+                            }
+                            nrf24_clear_tx_ds();
+                        }
+                        else if (status & (1 << MAX_RT)) // 송신 실패
+                        {
+                            nrf24_flush_tx();
+                            nrf24_clear_max_rt();
+                        }
+                    }
         }
     /* USER CODE END WHILE */
 
@@ -232,6 +265,12 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
     uint32_t now = HAL_GetTick();
 
+    if (GPIO_Pin == GPIO_PIN_3)
+    {
+            nrf_irq_flag = 1;
+            return;
+    }
+
     if (GPIO_Pin == GPIO_PIN_0)  // Accel 버튼
     {
         if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_RESET)
@@ -280,30 +319,32 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 // RF 초기화 함수
 void NRF24_Tx_Init(void)
 {
-	csn_high();
-	ce_high();
-	HAL_Delay(5);
-	ce_low();
+    csn_high();
+    HAL_Delay(5); // 안정화를 위해 nrf24_init() 전 5ms 딜레이 권장
+    ce_low();
 
-	nrf24_init();
-	nrf24_stop_listen();  // 송신기이므로 listen 비활성화
+    nrf24_init();
+    nrf24_stop_listen();
 
-	nrf24_auto_ack_all(auto_ack);
-	nrf24_en_ack_pld(disable);
-	nrf24_dpl(disable);
-	nrf24_set_crc(no_crc, _1byte);
+    /* ★★★ 설정 수정 ★★★ */
+    nrf24_auto_ack_all(auto_ack);
+    nrf24_en_ack_pld(enable);          // 1. ACK 페이로드 활성화
+    nrf24_dpl(disable);                // 2. 고정 페이로드 크기 사용
+    nrf24_set_crc(enable, _1byte);     // 3. CRC 활성화 권장 (양쪽 모두)
 
-	nrf24_tx_pwr(_0dbm);
-	nrf24_data_rate(_1mbps);
-	nrf24_set_channel(90);
-	nrf24_set_addr_width(5);
-	nrf24_set_rx_dpl(0, disable);
-	nrf24_pipe_pld_size(0, PLD_S);
-	nrf24_auto_retr_delay(4);
-	nrf24_auto_retr_limit(10);
+    nrf24_tx_pwr(_0dbm);
+    nrf24_data_rate(_1mbps);
+    nrf24_set_channel(90);
+    nrf24_set_addr_width(5);
+    nrf24_auto_retr_delay(4);
+    nrf24_auto_retr_limit(10);
 
-	nrf24_open_tx_pipe(tx_addr);
-	ce_high();
+    // 4. 파이프 설정 수정
+    nrf24_open_tx_pipe(tx_addr);
+    nrf24_open_rx_pipe(0, tx_addr);    // ★ 추가: ACK 수신을 위해 Pipe 0 열기
+
+    // 5. 페이로드 크기 설정 (송신/수신 모두)
+    nrf24_pipe_pld_size(0, ACK_PAYLOAD_SIZE); // ★ 추가: ACK 수신 파이프 크기
 }
 /* USER CODE END 4 */
 
