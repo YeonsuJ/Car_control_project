@@ -1,15 +1,18 @@
 #  CAN 통신 송/수신 초기 기능 구현 (m3)
 
 ## 🎯 프로젝트 활용 방안
-본 프로젝트는 RC카 핸들 제어를 위한 무선 컨트롤러에 자이로센서(MPU6050)를 장착하고, 차량의 회전 상태(Roll 각도)를 실시간으로 I2C 방식 OLED(SSD1306)에 시각적으로 출력하는 기능을 구현한다. 운전자의 직관적인 제어를 돕고, 자이로센서 데이터가 정상적으로 수신되고 있는지를 현장에서 즉시 확인하는 데 활용할 수 있다.
-
+can 통신은 프로젝트에서 어떻게 활용할 것인가?
 
 ## 📖 이론 개요
-MPU6050 자이로센서 동작 원리
-MPU6050은 3축 가속도계와 3축 자이로스코프가 통합된 6축 센서로, I2C 인터페이스를 통해 데이터를 송수신한다. 내부에 칼만 필터(Kalman filter)가 적용된 연산을 통해 자세(Roll, Pitch)를 비교적 안정적으로 계산할 수 있으며, 본 프로젝트에서는 Roll 각도만 추출하여 OLED에 출력한다.
+can통신이란?
 
-SSD1306 OLED 디스플레이 동작 원리
-SSD1306은 128x64 해상도의 모노크롬 OLED 디스플레이로, SPI 또는 I2C로 MCU와 통신한다. 본 프로젝트에서는 I2C를 채택하여 데이터와 명령어를 전송하고, 그래픽 라이브러리(fonts.h, ssd1306.h)를 통해 텍스트를 출력한다.
+can 통신 동작 원리
+
+
+
+사용한 can 트랜시버
+트랜시버를 왜 사용해야하나?
+왜 이 제품을 사용했나?
 
 
 ---
@@ -19,50 +22,100 @@ SSD1306은 128x64 해상도의 모노크롬 OLED 디스플레이로, SPI 또는 
 ### 송신부(Rx)
 <img src="../wiring_diagram/central_v1.1.0.png" alt="Locker, Encoder RPM 측정 추가 배선도" width="500"/>
 
+- 각 종단의 노드에 위치하는 모듈의 can_H와 can_L에는 종단저항을 120옴씩 연결해서 총저항의 값이 60옴이 되도록 만들어야한다.
+-> 왜?
+
 ※ 수신부(Rx)는 [V1.0.0_RF_MotorCtrl.md](./V1.0.0_RF_MotorCtrl.md)와 동일
 
 ---
 
 ## ⚙️ STM32CubeMX 설정
 
-### 송신부 변경 사항
-- Motor_Forward 
-    - PB8 : GPIO_Input (Pull-Up)
-- Motor_Backward 
-    - PB9 : GPIO_Input (Pull-Up)
+### CAN bit timing 설정
 
+CAN bit timing calculator 사이트
+http://www.bittiming.can-wiki.info/
 
-### 수신부 변경사항
+좋습니다. STM32F103의 시스템 클럭을 최대인 72 MHz로 설정했다면, CAN 통신에 사용되는 CAN 클럭 (bxCAN의 입력 클럭) 은 APB1 클럭에 기반합니다. 이 차이점을 먼저 이해하는 것이 중요합니다.
 
-DC모터 Encoder
-- combined channels > encoder mode
-- pb6 (tim4_ch1) : encoderA
-- pb7 (tim4_ch2) : encoderB
-- encoder mode TI1 adn TI2
-- prescaler : 0
-- Counter period(ARR) : 65535 or 0xFFFF (엔코더 overflow 방지)
-- Counter Mode : UP
-- IC1 Polarity: Rising Edge
-- IC1 Selection: Direct TI
-- IC1 Prescaler: No division (1번마다 1번 인식 = 모든 엣지를 다 인식함)
-- IC1 Filter: 10 (노이즈가 심하면 값을 올려줘야함)
-- (IC2 항목도 동일하게 설정)
+🔧 [1] bxCAN의 Clock Rate은 APB1 클럭 기준입니다
+STM32F103 시리즈에서는 다음이 기본 설정입니다:
+시스템 클럭 (SYSCLK) = 최대 72 MHz
+APB1 클럭 (PCLK1) = SYSCLK / 2 = 36 MHz (제한 때문: APB1 최대 36 MHz)
+CAN의 클럭 입력 소스 = PCLK1 = 36 MHz
+📌 따라서, Clock Rate 필드에는 36을 입력하는 것이 정답입니다.
 
-> 참고 [V1.0.0_RF_MotorCtrl.md](./V1.0.0_RF_MotorCtrl.md)
+✅ 요약
+항목	설정
+System Clock	72 MHz
+APB1 Clock (PCLK1)	36 MHz
+CAN 클럭 소스	36 MHz
+Clock Rate 필드에 넣을 값	36
+
+다음 단계
+CAN을 500kbps로 설정하려면:
+Clock Rate: 36
+Bit Rate: 500
+Sample-Point: 87.5
+SJW: 1
+
+으로 설정 후 “Request Table”을 눌러 추천되는 Prescaler, BS1, BS2 값을 사용하시면 됩니다.
+
+-> 결과 사진 캡쳐하기
+
+> 참고 https://www.micropeta.com/video115
+
 ---
 
 ## 💻 동작 코드
-다음은 기존의 v1.0.0 버전의 코드를 리팩토링한 사항을 요약한 것이다.
+다음은 ~한 코드이다.
 
-## 루프백 모드를 활성화 내부 송/수신 test
+#### 루프백모드를 통해 내장 CAN controller 정상 동작 확인
+CAN의 **루프백 모드(Loopback Mode)**는 자기 자신에게 전송한 CAN 메시지를 수신하는 테스트용 모드입니다. 실제 네트워크 버스(CAN 트랜시버, 다른 노드)는 전혀 사용하지 않습니다.
+
+✅ 루프백 모드란?
+Loopback Mode는 CAN 컨트롤러 내부에서만 데이터 전송/수신이 일어나는 모드로, 물리적인 CAN 라인(H/C, L/C) 없이도 전송/수신 동작을 자기 자신과만 테스트할 수 있게 해줍니다.
+
+✅ 동작 방식
+일반 모드	루프백 모드
+TX → 트랜시버 → CAN Bus → RX	TX → 내부 회로 → RX
+실제 송수신 발생	물리적인 송수신 없음
+다른 노드가 메시지 수신 가능	본인만 메시지 수신함
+
+✅ 루프백 모드의 한계
+한계	설명
+네트워크 테스트 불가	다른 노드와의 실제 통신은 테스트 불가능
+트랜시버/버스 상태 무시	전기적 특성, 종단저항, 오류 등 고려 못 함
+
+✅ 결론
+루프백 모드는 CAN 컨트롤러가 정상적으로 동작하는지 내부적으로 확인하기 위한 유용한 자기 테스트용 모드입니다. 하드웨어 없이 CAN 송수신 코드 검증이 가능하며, 초기에 매우 유용합니다.
+
+#### 코드
+
+#### 1. 송신부(Tx)
+
+#### 2. 수신부(Rx)
 
 
+- can filter란?, 왜 쓰는건지, 어떻게 설정하는건지
+- 그밖의 함수 등
+- 주소 설정 방법
 
 
+### 통신 결과
+- 로직 애널라이저, live expressions 등 사진 4개 첨부 
 
+<img src="../images/can_RxData.png" alt="can RxData" width="500"/>
+
+<img src="../images/can_TxData.png" alt="can TxData" width="500"/>
+
+<img src="../images/can_rx_logic_analyzer_capture.png" alt="can rx capture" width="500"/>
+
+<img src="../images/can_tx_logic_analyzer_capture.png" alt="can tx capture" width="500"/>
 
 ---
 
 ## 💡 향후 확장 및 개선 아이디어
-- 장애물을 초음파 센서로 감지 -> RF 통신을 통해 핸들로 전송, 핸들의 햅틱 센서로 운전자에게 진동 경고를 제공 
-- (파이프라인 추가해 Rx와 Tx 역할을 교체하여 양방향 통신을 구현)
+- CAN 기반 센서부에서 측정된 초음파 거리값 환산 데이터 -> 차량부 햅틱 제어 (향후 RF로 차량부에서 핸들부로 전송예정)
+- CAN timing parameter 중 prescaler 값을 조정하여 기존보다 빠른 500kbps 고속 CAN 통신을 구현, 통신 지연 최소화 및 실시간성 향상
+- FreeRTOS 기반 CAN 통신 모듈화 및 태스크 분리
