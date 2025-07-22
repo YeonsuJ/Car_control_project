@@ -78,4 +78,13 @@
 |내용|문서 링크|커밋해시|
 |---|:---:|:---:|
 |ACK 페이로드 기반 RF 양방향 송수신 구현|[null.md](./null.md)|[`controller_v1.5.0`](https://github.com/YeonsuJ/Car_control_project/commit/0745e3354e6c7a4ae12c31953c2b0a166a373d1a) / [`central_v1.5.0`](https://github.com/YeonsuJ/Car_control_project/commit/fb063337c0dd13055ecf7afc8d4cca3d3b347613)|
-|Broadcast 기반 CAN 송/수신 초음파센서 -> 햅틱센서 제어 통합|[V1.5.0_Broadcast_Can_Comm.md](./V1.5.0_Broadcast_Can_Comm.md)|[`central_v1.5.0`](https://github.com/YeonsuJ/Car_control_project/commit/fb063337c0dd13055ecf7afc8d4cca3d3b347613) / [`sensor_v1.5.0`](https://github.com/YeonsuJ/Car_control_project/commit/13f38c18cb6364108f1dbb893375f56113965320) / [`status_v1.5.0`](https://github.com/YeonsuJ/Car_control_project/commit/d7810ab06a289a489a91285c02ddfea00daa1e14)|
+|Broadcast 기반 CAN 송/수신 초음파센서 -> 햅틱센서 제어 통합(v1.5.0)|[V1.5.0_Broadcast_Can_Comm.md](./V1.5.0_Broadcast_Can_Comm.md)|[`central_v1.5.0`](https://github.com/YeonsuJ/Car_control_project/commit/fb063337c0dd13055ecf7afc8d4cca3d3b347613) / [`sensor_v1.5.0`](https://github.com/YeonsuJ/Car_control_project/commit/13f38c18cb6364108f1dbb893375f56113965320) / [`status_v1.5.0`](https://github.com/YeonsuJ/Car_control_project/commit/d7810ab06a289a489a91285c02ddfea00daa1e14)|
+
+---
+
+## 11주차 (25-07-21 ~ 25-07-27)
+|내용|문서 링크|커밋해시|
+|---|:---:|:---:|
+|핸들에 전/후진 기어변속 디스플레이 추가|||
+|rpm 값 기반 최고속도 제한 기능 추가||
+|RTOS 구조화 (우선순위)|||
