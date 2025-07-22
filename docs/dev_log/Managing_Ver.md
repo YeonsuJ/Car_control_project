@@ -58,7 +58,10 @@ ex) sensor
 git checkout Unit_car_status 
 
 // 2. 로컬에 태그 생성
+// 2-1. 가장 최근 커밋(HEAD)에 태그 (기본값)
 git tag -a sensor_v1.5.0 -m "car_status 통합 완료"
+// 2-2. 원하는 커밋 해시를 지정해서 태그 (7자리)
+git tag -a sensor_v1.5.0 <커밋해시7자리> -m "car_status 통합 완료"
 
 // 3. 원격으로 push 반영
 git push origin sensor_v1.5.0
