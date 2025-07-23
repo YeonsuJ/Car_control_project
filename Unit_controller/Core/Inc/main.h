@@ -57,25 +57,25 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define Servo_Out_Pin GPIO_PIN_2
-#define Servo_Out_GPIO_Port GPIOA
 #define CSN_Pin GPIO_PIN_3
 #define CSN_GPIO_Port GPIOA
 #define CE_Pin GPIO_PIN_4
 #define CE_GPIO_Port GPIOA
+#define BUTTON_accel_Pin GPIO_PIN_0
+#define BUTTON_accel_GPIO_Port GPIOB
+#define BUTTON_accel_EXTI_IRQn EXTI0_IRQn
+#define BUTTON_brake_Pin GPIO_PIN_1
+#define BUTTON_brake_GPIO_Port GPIOB
+#define BUTTON_brake_EXTI_IRQn EXTI1_IRQn
 #define Gyro_SCL_Pin GPIO_PIN_10
 #define Gyro_SCL_GPIO_Port GPIOB
 #define Gyro_SDA_Pin GPIO_PIN_11
 #define Gyro_SDA_GPIO_Port GPIOB
+#define HAPTIC_Pin GPIO_PIN_8
+#define HAPTIC_GPIO_Port GPIOA
 #define IRQ_Pin GPIO_PIN_3
 #define IRQ_GPIO_Port GPIOB
 #define IRQ_EXTI_IRQn EXTI3_IRQn
-#define LED_Pin GPIO_PIN_4
-#define LED_GPIO_Port GPIOB
-#define OLED_SCL_Pin GPIO_PIN_6
-#define OLED_SCL_GPIO_Port GPIOB
-#define OLED_SDA_Pin GPIO_PIN_7
-#define OLED_SDA_GPIO_Port GPIOB
 #define Motor_Backward_Pin GPIO_PIN_8
 #define Motor_Backward_GPIO_Port GPIOB
 #define Motor_Foward_Pin GPIO_PIN_9

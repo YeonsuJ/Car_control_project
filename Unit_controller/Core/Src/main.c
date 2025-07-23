@@ -25,33 +25,25 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "fonts.h"
-#include "ssd1306.h"
+#include <string.h>
 #include "mpu6050.h"
-#include "NRF24.h"
-#include "NRF24_reg_addresses.h"
+#include "input_handler.h"
+#include "comm_handler.h"
 
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-// MPU6050 구조체 인스턴스 (외부 라이브러리에서 정의)
+
 MPU6050_t MPU6050;
 
-// 방향 전송값 정의
-typedef enum{
-	LOCKER_FORWARD = 1,
-	LOCKER_BACKWARD = 0
-} LockerDirection;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-// NRF24 페이로드 크기 (byte)
-#define PLD_S 32
-#define ACK_PAYLOAD_SIZE 2
-// NRF24 송신 주기 (ms)
-#define TRANSMIT_INTERVAL_MS 20
+
+#define TRANSMIT_INTERVAL_MS 1
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -62,31 +54,17 @@ typedef enum{
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-volatile uint8_t accel_pressed = 0;
-volatile uint8_t brake_pressed = 0;
-volatile uint32_t accel_count = 0;   // 20ms 단위
-volatile uint32_t brake_count = 0;   // 20ms 단위
-
-volatile uint32_t prev_tick_accel = 0;
-volatile uint32_t prev_tick_brake = 0;
-
-uint8_t tx_addr[5] = {0x45, 0x55, 0x67, 0x10, 0x21};
-uint8_t dataT[PLD_S];  // 전송 버퍼
 
 uint32_t lastTransmitTick = 0;
-
-uint8_t ack_payload[ACK_PAYLOAD_SIZE] = {0};
-volatile uint8_t nrf_irq_flag = 0;
-
-char oled_buffer[20];
-float final_rpm = 0.0;
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-void NRF24_Tx_Init(void);
+static float App_GetRollAngle(void);
+static void App_BuildPacket(uint8_t* packet_buffer, float roll_angle);
+static void App_HandleAckPayload(uint8_t* ack_payload);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -132,88 +110,55 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_I2C1_Init();
   MX_I2C2_Init();
   MX_TIM2_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-  SSD1306_Init();
 
-  // MPU6050 초기화 실패 시 Error_Handler
-  if (MPU6050_Init(&hi2c2) !=0){
-	  Error_Handler();
+  InputHandler_Init();
+  CommHandler_Init();
+
+  if (MPU6050_Init(&hi2c2) != 0) {
+      Error_Handler();
   }
 
   HAL_TIM_Base_Start_IT(&htim2);
 
-  //NRF24L01 무선 송신 설정
-  NRF24_Tx_Init();
+  uint8_t tx_packet[PAYLOAD_SIZE] = {0};
+  uint8_t ack_packet[ACK_PAYLOAD_SIZE] = {0};
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
     while (1)
     {
-        uint32_t now = HAL_GetTick();
+    	   uint32_t now = HAL_GetTick();
 
-        if (now - lastTransmitTick >= TRANSMIT_INTERVAL_MS)
-        {
-            lastTransmitTick = now;
+            if (now - lastTransmitTick >= TRANSMIT_INTERVAL_MS)
+            {
+                lastTransmitTick = now;
 
-            // 1. 자이로센서 데이터 읽기 및 유효성 검사
-            MPU6050_Read_All(&hi2c2, &MPU6050);
-            float roll = MPU6050.KalmanAngleX;
+                float roll = App_GetRollAngle();
 
-            // 2. 전송 버퍼 구성
-            memset(dataT, 0, PLD_S);
-            dataT[0] = 1;  // 식별자
+                // 2. 전송 패킷 생성 (어떻게?) -> 내부 헬퍼 함수가 알아서
+                App_BuildPacket(tx_packet, roll);
 
-            // 3. roll (float → int16_t)
-            int16_t roll_encoded = (int16_t)(roll * 100.0f);  // 예: 32.53° → 3253
-            memcpy(&dataT[1], &roll_encoded, sizeof(int16_t));  // roll : 1~2 byte
+                // 3. 데이터 전송 (누구에게?) -> 통신 핸들러에게 위임
+                CommHandler_Transmit(tx_packet, PAYLOAD_SIZE);
 
-            // 4. accel_count, brake_count (uint16_t로 압축 전송, 단위: 20ms)
-            uint16_t accel_ms = (uint16_t)(accel_count * 20);
-            uint16_t brake_ms = (uint16_t)(brake_count * 20);
-            memcpy(&dataT[3], &accel_ms, sizeof(uint16_t));    // accel_ms : 3~4 byte
-            memcpy(&dataT[5], &brake_ms, sizeof(uint16_t));    // brake_ms : 5~6 byte
+                // 4. 통신 결과 확인 및 처리
+                CommStatus_t status = CommHandler_CheckStatus(ack_packet, ACK_PAYLOAD_SIZE);
+                if (status == COMM_TX_SUCCESS)
+                {
+                    App_HandleAckPayload(ack_packet);
+                }
+                else if (status == COMM_TX_FAIL)
+                {
+                    // TODO: 통신 실패 시 처리 로직
+                }
+            }
 
-            // 5. 락커 스위치 판별 (PB8: LOCKER_BACKWARD == 0, PB9: LOCKER_FORWARD == 1)
-            // direction : 7 byte
-            if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_9) == GPIO_PIN_RESET)
-                dataT[7] = LOCKER_FORWARD;
-            else
-                dataT[7] = LOCKER_BACKWARD;
-
-            // 6. NRF24 전송
-            nrf24_transmit(dataT, PLD_S);
-            HAL_Delay(5);
-
-            if (nrf_irq_flag)
-                    {
-                        nrf_irq_flag = 0; // 플래그 초기화
-                        uint8_t status = nrf24_r_status();
-
-                        if (status & (1 << TX_DS)) // 송신 성공 (ACK 수신)
-                        {
-                            if (nrf24_data_available())
-                            {
-                                nrf24_receive(ack_payload, ACK_PAYLOAD_SIZE);
-                                if (ack_payload[0] == 1)
-                                	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
-                                else
-                                	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
-
-                            }
-                            nrf24_clear_tx_ds();
-                        }
-                        else if (status & (1 << MAX_RT)) // 송신 실패
-                        {
-                            nrf24_flush_tx();
-                            nrf24_clear_max_rt();
-                        }
-                    }
-        }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -261,90 +206,69 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+// ★★★ main 루프의 상세 로직을 담당하는 내부 헬퍼 함수들 ★★★
+
+/**
+  * @brief  MPU6050 센서로부터 Roll 각도를 읽어옵니다.
+  */
+static float App_GetRollAngle(void)
+{
+    MPU6050_Read_All(&hi2c2, &MPU6050);
+    return MPU6050.KalmanAngleX;
+}
+
+/**
+  * @brief  각 모듈에서 데이터를 가져와 전송 패킷을 구성합니다.
+  */
+static void App_BuildPacket(uint8_t* packet_buffer, float roll_angle)
+{
+    memset(packet_buffer, 0, PAYLOAD_SIZE);
+
+    packet_buffer[0] = 1; // ID
+
+    // Roll 값 인코딩
+    int16_t roll_encoded = (int16_t)(roll_angle * 100.0f);
+    memcpy(&packet_buffer[1], &roll_encoded, sizeof(int16_t));
+
+    // 버튼 입력 시간 가져오기
+    uint16_t accel_ms = InputHandler_GetAccelMillis();
+    uint16_t brake_ms = InputHandler_GetBrakeMillis();
+    memcpy(&packet_buffer[3], &accel_ms, sizeof(uint16_t));
+    memcpy(&packet_buffer[5], &brake_ms, sizeof(uint16_t));
+
+    // 방향 정보 가져오기
+    packet_buffer[7] = InputHandler_GetDirection();
+}
+
+/**
+  * @brief  수신된 ACK 페이로드를 처리합니다.
+  */
+static void App_HandleAckPayload(uint8_t* ack_payload)
+{
+    if (ack_payload[0] == 1)
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
+    else
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
+}
+
+// --- 콜백 함수들은 각 핸들러에게 작업을 위임 ---
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-    uint32_t now = HAL_GetTick();
-
     if (GPIO_Pin == GPIO_PIN_3)
     {
-            nrf_irq_flag = 1;
-            return;
+        CommHandler_IrqCallback();
+        return;
     }
-
-    if (GPIO_Pin == GPIO_PIN_0)  // Accel 버튼
-    {
-        if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_RESET)
-        {
-            // 눌림이 감지된 순간(하강), 디바운싱 여부와 상관없이 초기화
-            accel_pressed = 1;
-            accel_count = 0;
-            prev_tick_accel = now;
-        }
-        else
-        {
-            // 떼짐(상승)은 즉시 pressed=0 처리 및 카운트 초기화
-            accel_pressed = 0;
-            accel_count = 0;
-            prev_tick_accel = now;
-        }
-    }
-    else if (GPIO_Pin == GPIO_PIN_1)  // Brake 버튼
-    {
-        if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1) == GPIO_PIN_RESET)
-        {
-            // 눌림이 감지된 순간(하강), 디바운싱 여부와 상관없이 초기화
-            brake_pressed = 1;
-            brake_count = 0;
-            prev_tick_brake = now;
-        }
-        else
-        {
-            // 떼짐(상승)은 즉시 pressed=0 처리 및 카운트 초기화
-            brake_pressed = 0;
-            brake_count = 0;
-            prev_tick_brake = now;
-        }
-    }
+    InputHandler_GpioCallback(GPIO_Pin);
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-    if (htim->Instance == TIM2) // 20ms 주기 타이머
+    if (htim->Instance == TIM2)
     {
-        if (accel_pressed) accel_count++;
-        if (brake_pressed) brake_count++;
+        InputHandler_TimerCallback();
     }
-}
-
-// RF 초기화 함수
-void NRF24_Tx_Init(void)
-{
-    csn_high();
-    HAL_Delay(5); // 안정화를 위해 nrf24_init() 전 5ms 딜레이 권장
-    ce_low();
-
-    nrf24_init();
-    nrf24_stop_listen();
-
-    /* ★★★ 설정 수정 ★★★ */
-    nrf24_auto_ack_all(auto_ack);
-    nrf24_en_ack_pld(enable);          // 1. ACK 페이로드 활성화
-    nrf24_dpl(disable);                // 2. 고정 페이로드 크기 사용
-    nrf24_set_crc(enable, _1byte);     // 3. CRC 활성화 권장 (양쪽 모두)
-
-    nrf24_tx_pwr(_0dbm);
-    nrf24_data_rate(_1mbps);
-    nrf24_set_channel(90);
-    nrf24_set_addr_width(5);
-    nrf24_auto_retr_delay(4);
-    nrf24_auto_retr_limit(10);
-
-    // 4. 파이프 설정 수정
-    nrf24_open_tx_pipe(tx_addr);
-    nrf24_open_rx_pipe(0, tx_addr);    // ★ 추가: ACK 수신을 위해 Pipe 0 열기
-
-    // 5. 페이로드 크기 설정 (송신/수신 모두)
-    nrf24_pipe_pld_size(0, ACK_PAYLOAD_SIZE); // ★ 추가: ACK 수신 파이프 크기
 }
 /* USER CODE END 4 */
 
