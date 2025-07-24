@@ -86,7 +86,6 @@
 |내용|문서 링크|커밋해시|
 |---|:---:|:---:|
 |컨트롤러부 파일 분할 및 코드 최적화|[V1.6.0_Controller_Refactor.md](./V1.6.0_Controller_Refactor.md)|[`controller_v1.6.0`](https://github.com/YeonsuJ/Car_control_project/commit/033420c3bb7774f772402cf7f1a2d00c62ac3682)|
-|CAN 송신부 폴링 -> 인터럽트 처리(V1.5.0_Broadcast_Can_Comm.md 개선방향에따라)||||
 |핸들에 전/후진 기어변속 디스플레이 추가|||
 |rpm 값 기반 최고속도 제한 기능 추가 및 Shift-lock 시스템 적용: DC모터 전/후진 전환 시 브레이크 입력 필수 조건 추가||
 |RTOS 구조화 (우선순위)|||
