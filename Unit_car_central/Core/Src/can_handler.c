@@ -21,6 +21,13 @@ CAN_RxHeaderTypeDef RxHeader;
 uint8_t RxData[8];
 volatile uint8_t can_distance_signal = 0;
 
+void CANHandler_Init(void)
+{
+	extern CAN_HandleTypeDef hcan;
+	HAL_CAN_Start(&hcan);
+	CAN_Filter_Config(&hcan);
+}
+
 // can 필터 설정 및 인터럽트 활성화 함수
 void CAN_Filter_Config(CAN_HandleTypeDef *hcan_ptr)
 {

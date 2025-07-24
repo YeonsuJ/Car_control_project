@@ -102,10 +102,8 @@ int main(void)
   MX_CAN_Init();
   /* USER CODE BEGIN 2 */
 
-  // 1. Can 시작, 필터 설정 및 인터럽트 등록
-  extern CAN_HandleTypeDef hcan;
-  HAL_CAN_Start(&hcan);
-  CAN_Filter_Config(&hcan);
+  // 1. Can 시작, 필터 설정 및 인터럽트 등록 핸들러 초기화
+  CANHandler_Init();
 
   // 2. RF 핸들러 초기화
   RFHandler_Init();

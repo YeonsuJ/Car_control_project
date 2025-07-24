@@ -1,5 +1,3 @@
-// comm_handler.c
-
 #include "rf_handler.h"
 #include "NRF24.h" // 저수준 드라이버 포함
 #include "NRF24_reg_addresses.h"
@@ -24,6 +22,7 @@
 static volatile uint8_t nrf_irq_flag = 0;
 static uint8_t ack_response[ACK_PAYLOAD_SIZE] = {0};
 
+// NRF24 모듈 수신 초기화
 void RFHandler_Init(void)
 {
     static uint8_t rx_addr[5] = {0x45, 0x55, 0x67, 0x10, 0x21};
@@ -47,17 +46,20 @@ void RFHandler_Init(void)
     nrf24_listen(); // 수신 대기 시작
 }
 
+// IRQ 핀 EXTI 발생 시 호출
 void RFHandler_IrqCallback(void)
 {
     nrf_irq_flag = 1;
 }
 
+// 다음 ACK 페이로드에 실릴 신호 설정
 void RFHandler_SetAckPayload(uint8_t signal)
 {
     // ACK 페이로드 버퍼의 첫 바이트에 신호값을 저장
     ack_response[0] = signal;
 }
 
+// 새 명령 패킷이 수신되었을 때만 true 반환 및 값 복사
 bool RFHandler_GetNewCommand(VehicleCommand_t* command)
 {
     if (!nrf_irq_flag) {
