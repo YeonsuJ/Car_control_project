@@ -19,3 +19,5 @@
 |----------|--------------|-----------|
 | [`controller_v1.0.0`](https://github.com/YeonsuJ/Car_control_project/commit/de77deb8e3d7acceab46b517a5e457805b62f0cb) | 2025-07-08 |  acc, brk, roll 값 기반 RF 송신 → DC/서보 모터 제어 통합 (v1.0.0) |
 | [`controller_v1.1.0`](https://github.com/YeonsuJ/Car_control_project/commit/241c4c5877d608a3723825619a0ed84717d12e22) | 2025-07-11 | 코드 리팩토링 및 Locker 스위치 기반 전/후진 기능 추가 (v1.1.0) |
+| [`controller_v1.5.0`](https://github.com/YeonsuJ/Car_control_project/commit/0745e3354e6c7a4ae12c31953c2b0a166a373d1a) | 2025-07-17 | ACK Payload 기반 RF 통신 구현 및 통합 완료 (v1.5.0) |
+| [`controller_v1.6.0`](https://github.com/YeonsuJ/Car_control_project/commit/033420c3bb7774f772402cf7f1a2d00c62ac3682) | 2025-07-17 | 파일 분할 및 코드 최적화 완료 (v1.6.0) |
