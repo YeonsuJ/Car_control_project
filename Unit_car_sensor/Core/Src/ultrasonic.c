@@ -1,18 +1,19 @@
 #include "ultrasonic.h"
+#include "tim.h"
 
 /* 외부 핸들 */
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim4;
 
 // 전역변수
-static volatile uint32_t ic_val1_front = 0;
-static volatile uint32_t ic_val2_front = 0;
-static volatile uint8_t is_first_captured_front = 0;
+volatile uint32_t ic_val1_front = 0;
+volatile uint32_t ic_val2_front = 0;
+volatile uint8_t is_first_captured_front = 0;
 volatile uint32_t distance_front = 0;
 
-static volatile uint32_t ic_val1_rear = 0;
-static volatile uint32_t ic_val2_rear = 0;
-static volatile uint8_t is_first_captured_rear = 0;
+volatile uint32_t ic_val1_rear = 0;
+volatile uint32_t ic_val2_rear = 0;
+volatile uint8_t is_first_captured_rear = 0;
 volatile uint32_t distance_rear = 0;
 
 // tim2를 delay로 사용
