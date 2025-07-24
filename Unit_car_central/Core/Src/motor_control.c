@@ -1,9 +1,12 @@
-// actuator_controller.c
+#include "motor_control.h"
+#include <math.h> // fabsf 함수 사용
 
-#include "actuator_controller.h"
+// === 타이머 및 GPIO 외부 참조 ===
+extern TIM_HandleTypeDef htim1; // DC 모터 PWM 타이머
+extern TIM_HandleTypeDef htim2; // 서보 모터 PWM 타이머
+extern TIM_HandleTypeDef htim4; // DC 모터 엔코더 타이머
 
-extern TIM_HandleTypeDef htim1;
-extern TIM_HandleTypeDef htim2;
+// === private 변수 ===
 
 // 이 파일 안에서만 사용할 것이므로 static으로 선언
 static TIM_HandleTypeDef* dc_motor_htim = &htim1;  // DC 모터 타이머
@@ -12,7 +15,14 @@ static uint32_t dc_motor_channel = TIM_CHANNEL_4;   // DC 모터 채널
 static TIM_HandleTypeDef* servo_htim = &htim2;     // 서보 타이머
 static uint32_t servo_channel = TIM_CHANNEL_3;      // 서보 채널
 
+static float motor_rpm = 0.0f; // RPM 값을 파일 내부에 저장
+
 // === private 매크로 및 열거형 ===
+// RPM 계산용 상수
+#define PPR 11
+#define GEAR_RATIO 21.3f
+#define TICKS_PER_REV (PPR * GEAR_RATIO * 4)
+
 typedef enum {
     DIRECTION_BACKWARD = 0,
     DIRECTION_FORWARD = 1
@@ -21,36 +31,63 @@ typedef enum {
 #define MOTOR_FORWARD()     do { HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_RESET); HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET); } while (0)
 #define MOTOR_BACKWARD()    do { HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_SET); HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET); } while (0)
 
-
 // === private 함수 프로토타입 ===
-static void s_ControlServo(float roll);
-static void s_ControlDcMotor(uint16_t accel_ms, uint16_t brake_ms);
-static void s_UpdateMotorDirection(MotorDirection_t direction);
+static void Control_Servo(float roll);
+static void Control_DcMotor(uint16_t accel_ms, uint16_t brake_ms);
+static void Update_MotorDirection(MotorDirection_t direction);
+static void Update_Motor_RPM(void);
 
-
-// === 공개 함수 구현 ===
-void ActuatorController_Init(void)
+void MotorControl_Init(void)
 {
-    // PWM 시작
+    // PWM 타이머 시작
     HAL_TIM_PWM_Start(servo_htim, servo_channel);
     HAL_TIM_PWM_Start(dc_motor_htim, dc_motor_channel);
+
+    // 엔코더 타이머 시작
+    HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
 
     // 초기 방향 설정
     MOTOR_FORWARD();
 }
 
-void ActuatorController_Update(const VehicleCommand_t* command)
+void MotorControl_Update(const VehicleCommand_t* command)
 {
-    s_UpdateMotorDirection((MotorDirection_t)command->direction);
-    s_ControlServo(command->roll);
-    s_ControlDcMotor(command->accel_ms, command->brake_ms);
+	Update_Motor_RPM();
+	Update_MotorDirection((MotorDirection_t)command->direction);
+    Control_Servo(command->roll);
+    Control_DcMotor(command->accel_ms, command->brake_ms);
 }
 
+float MotorControl_GetRPM(void)
+{
+    return motor_rpm;
+}
 
 // === private(내부용) 함수 구현 ===
 
-// 서보 모터 제어 함수 (기존 Control_Servo)
-static void s_ControlServo(float roll)
+// RPM 계산 함수
+void Update_Motor_RPM(void)
+{
+    static int16_t last_encoder = 0;
+    static uint32_t last_rpm_tick = 0;
+
+    uint32_t now = HAL_GetTick();
+
+    if (now - last_rpm_tick >= 100) // 100ms 마다 계산
+    {
+        last_rpm_tick = now;
+
+        int16_t enc = (int16_t)__HAL_TIM_GET_COUNTER(&htim4);
+        int16_t delta = (int16_t)(enc - last_encoder);
+        last_encoder = enc;
+
+        // RPM 계산 결과를 static 변수에 저장
+        motor_rpm = fabsf(((float)delta / TICKS_PER_REV) * 10.0f * 60.0f);
+    }
+}
+
+// 서보 모터 제어 함수
+static void Control_Servo(float roll)
 {
     if (roll < -90.0f) roll = -90.0f;
     if (roll >  90.0f) roll =  90.0f;
@@ -61,8 +98,8 @@ static void s_ControlServo(float roll)
     __HAL_TIM_SET_COMPARE(servo_htim, servo_channel, pwm_servo);
 }
 
-// DC 모터 제어 함수 (기존 Control_DC_Motor)
-static void s_ControlDcMotor(uint16_t accel_ms, uint16_t brake_ms)
+// DC 모터 제어 함수
+static void Control_DcMotor(uint16_t accel_ms, uint16_t brake_ms)
 {
     static int16_t duty = 0;
     const int16_t accel_step = 50;
@@ -83,8 +120,8 @@ static void s_ControlDcMotor(uint16_t accel_ms, uint16_t brake_ms)
     __HAL_TIM_SET_COMPARE(dc_motor_htim, dc_motor_channel, duty);
 }
 
-// 모터 방향 제어 함수 (기존 Update_Motor_Direction)
-static void s_UpdateMotorDirection(MotorDirection_t direction)
+// 모터 방향 제어 함수
+static void Update_MotorDirection(MotorDirection_t direction)
 {
     static MotorDirection_t prev_direction = DIRECTION_FORWARD;
     if (direction != prev_direction) {

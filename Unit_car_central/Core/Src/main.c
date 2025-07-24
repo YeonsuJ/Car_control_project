@@ -29,8 +29,7 @@
 #include "NRF24_reg_addresses.h"
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
-#include "actuator_controller.h"
+#include "motor_control.h"
 #include "can_handler.h"
 #include "rf_handler.h"
 /* USER CODE END Includes */
@@ -43,10 +42,6 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-#define PPR 11
-#define GEAR_RATIO 21.3f
-#define TICKS_PER_REV (PPR * GEAR_RATIO * 4)
-
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -58,17 +53,12 @@
 
 /* USER CODE BEGIN PV */
 
-float motor_rpm = 0.0f;
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-static float App_GetRollAngle(void);
-static void App_BuildPacket(uint8_t* packet_buffer, float roll_angle);
-static void App_HandleAckPayload(uint8_t* ack_payload);
-static void Update_Motor_RPM(void); // <-- RPM 함수 프로토타입 추가
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -114,13 +104,14 @@ int main(void)
 
   // 1. Can 시작, 필터 설정 및 인터럽트 등록
   extern CAN_HandleTypeDef hcan;
-
   HAL_CAN_Start(&hcan);
   CAN_Filter_Config(&hcan);
 
+  // 2. RF 핸들러 초기화
   RFHandler_Init();
 
-  ActuatorController_Init();
+  // 3. 모터 제어기 초기화 (PWM, 엔코더 시작)
+  MotorControl_Init();
 
   VehicleCommand_t cmd = {0};
 
@@ -130,14 +121,10 @@ int main(void)
   /* USER CODE BEGIN WHILE */
     while (1)
     {
-
-       // 1. 모터 RPM 계산
-       Update_Motor_RPM();
-
       if (RFHandler_GetNewCommand(&cmd))
       {
-          // 새 명령이 수신되었을 때만 모터/서보 제어 함수 호출
-    	  ActuatorController_Update(&cmd);
+    	  // 새 명령 수신 시 모터/서보 제어 및 RPM 업데이트 동시 수행
+    	  MotorControl_Update(&cmd);
       }
 
       // CAN 신호를 받아 다음 ACK 페이로드에 실릴 데이터를 설정
@@ -197,29 +184,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
         RFHandler_IrqCallback(); // 핸들러에게 위임
     }
 }
-
-void Update_Motor_RPM(void)
-{
-    static int16_t last_encoder = 0;
-    static uint32_t last_rpm_tick = 0;
-    extern TIM_HandleTypeDef htim4; // 엔코더 타이머 참조
-    extern float motor_rpm; // RPM 전역변수 참조
-
-    uint32_t now = HAL_GetTick();
-
-    if (now - last_rpm_tick >= 100) // 100ms 마다 계산
-    {
-        last_rpm_tick = now;
-
-        int16_t enc = (int16_t)__HAL_TIM_GET_COUNTER(&htim4);
-        int16_t delta = (int16_t)(enc - last_encoder);
-        last_encoder = enc;
-
-        // RPM 계산
-        motor_rpm = fabsf(((float)delta / TICKS_PER_REV) * 10.0f * 60.0f);
-    }
-}
-
 /* USER CODE END 4 */
 
 /**
