@@ -85,7 +85,16 @@
 ## 11주차 (25-07-21 ~ 25-07-27)
 |내용|문서 링크|커밋해시|
 |---|:---:|:---:|
-|컨트롤러부 파일 분할 및 코드 최적화|[V1.6.0_Controller_Refactor.md](./V1.6.0_Controller_Refactor.md)|[`controller_v1.6.0`](https://github.com/YeonsuJ/Car_control_project/commit/033420c3bb7774f772402cf7f1a2d00c62ac3682)|
+|Controller 부 파일 분할 및 코드 최적화|[V1.6.0_Controller_Refactor.md](./V1.6.0_Controller_Refactor.md)|[`controller_v1.6.0`](https://github.com/YeonsuJ/Car_control_project/commit/033420c3bb7774f772402cf7f1a2d00c62ac3682)|
+|Central 부 파일 분할 및 코드 최적화|[V1.6.0_Central_Refactor.md](./V1.6.0_Central_Refactor.md)|[`central_v1.6.0`](https://github.com/YeonsuJ/Car_control_project/commit/ed8325284a8a2a170ed8d7cca09e3f1764a1e998)|
+|Sensor 부 파일 분할 및 코드 최적화|[V1.6.0_Sensor_Refactor.md](./V1.6.0_Sensor_Refactor.md)|[`sensor_v1.6.0`](https://github.com/YeonsuJ/Car_control_project/commit/4e33ac5c79cb0055fc08e2029c518f396682fa97)|
+|Status 부 파일 분할 및 코드 최적화|[V1.6.0_Status_Refactor.md](./V1.6.0_Status_Refactor.md)|[`status_v1.6.0`]()|
+
+---
+
+## 12주차 (25-07-28 ~ 25-08-03)
+|내용|문서 링크|커밋해시|
+|---|:---:|:---:|
 |핸들에 전/후진 기어변속 디스플레이 추가|||
 |rpm 값 기반 최고속도 제한 기능 추가 및 Shift-lock 시스템 적용: DC모터 전/후진 전환 시 브레이크 입력 필수 조건 추가||
 |RTOS 구조화 (우선순위)|||
