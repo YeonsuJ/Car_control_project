@@ -86,9 +86,9 @@
 |내용|문서 링크|커밋해시|
 |---|:---:|:---:|
 |Controller 부 파일 분할 및 코드 최적화|[V1.6.0_Controller_Refactor.md](./V1.6.0_Controller_Refactor.md)|[`controller_v1.6.0`](https://github.com/YeonsuJ/Car_control_project/commit/033420c3bb7774f772402cf7f1a2d00c62ac3682)|
-|Central 부 파일 분할 및 코드 최적화|[V1.6.0_Central_Refactor.md](./V1.6.0_Central_Refactor.md)|[`central_v1.6.0`](https://github.com/YeonsuJ/Car_control_project/commit/ed8325284a8a2a170ed8d7cca09e3f1764a1e998)|
-|Sensor 부 파일 분할 및 코드 최적화|[V1.6.0_Sensor_Refactor.md](./V1.6.0_Sensor_Refactor.md)|[`sensor_v1.6.0`](https://github.com/YeonsuJ/Car_control_project/commit/4e33ac5c79cb0055fc08e2029c518f396682fa97)|
-|Status 부 파일 분할 및 코드 최적화|[V1.6.0_Status_Refactor.md](./V1.6.0_Status_Refactor.md)|[`status_v1.6.0`]()|
+|Central 부 파일 분할 및 코드 최적화 + CAN 개선|[V1.6.0_Central_Refactor.md](./V1.6.0_Central_Refactor.md)|[`central_v1.6.0`](https://github.com/YeonsuJ/Car_control_project/commit/ed8325284a8a2a170ed8d7cca09e3f1764a1e998)|
+|Sensor 부 파일 분할 및 코드 최적화 + CAN 개선|[V1.6.0_Sensor_Refactor.md](./V1.6.0_Sensor_Refactor.md)|[`sensor_v1.6.0`](https://github.com/YeonsuJ/Car_control_project/commit/4e33ac5c79cb0055fc08e2029c518f396682fa97)|
+|Status 부 파일 분할 및 코드 최적화 + CAN 개선, ADC 배터리 측정 추가|[V1.6.0_Status_Refactor.md](./V1.6.0_Status_Refactor.md)|[`status_v1.6.0`](https://github.com/YeonsuJ/Car_control_project/commit/ff784f4d59c5a10102964285e873eb8930eb3fa3)|
 
 ---
 
