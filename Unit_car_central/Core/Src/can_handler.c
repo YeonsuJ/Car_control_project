@@ -1,6 +1,5 @@
 #include "can_handler.h"
 #include "can.h" // hcan 정의가 여기에 있을 수 있습니다.
-#include "gpio.h" // HAL_GPIO_WritePin 사용을 위해 필요
 
 // =============================
 // CAN 수신(Rx) 패킷 구조 정의
@@ -54,12 +53,10 @@ void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
   HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO1, &RxHeader, RxData);
 
-  // 1. 햅틱 모터는 즉시 제어
-  if (RxData[0] == 1)
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
-  else
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
-
-  // 2. ACK 페이로드에 보낼 신호를 안전한 변수에 저장
-  can_distance_signal = RxData[0];
+  // 수신 ID와 데이터 길이 확인
+  if (RxHeader.StdId == 0x6A5 && RxHeader.DLC == 1)
+  {
+	  // 거리 상태(0 또는 1)를 내부 변수에 저장
+	  can_distance_signal = RxData[0];
+  }
 }

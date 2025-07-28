@@ -67,15 +67,11 @@ void Error_Handler(void);
 #define CSN_GPIO_Port GPIOA
 #define CE_Pin GPIO_PIN_4
 #define CE_GPIO_Port GPIOA
-#define Haptic_IN_Pin GPIO_PIN_10
-#define Haptic_IN_GPIO_Port GPIOB
 #define L298N_ENA_Pin GPIO_PIN_11
 #define L298N_ENA_GPIO_Port GPIOA
 #define IRQ_Pin GPIO_PIN_3
 #define IRQ_GPIO_Port GPIOB
 #define IRQ_EXTI_IRQn EXTI3_IRQn
-#define LED_Pin GPIO_PIN_4
-#define LED_GPIO_Port GPIOB
 #define ENCODER_A_Pin GPIO_PIN_6
 #define ENCODER_A_GPIO_Port GPIOB
 #define ENCODER_B_Pin GPIO_PIN_7
