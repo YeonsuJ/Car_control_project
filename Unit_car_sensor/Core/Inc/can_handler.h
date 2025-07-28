@@ -12,7 +12,7 @@
 
 extern CAN_TxHeaderTypeDef TxHeader;
 extern uint32_t TxMailbox;
-extern uint8_t TxData[8];
+extern uint8_t TxData[1];
 
 void CAN_tx_Init(void);   /* HAL_CAN_Start + 헤더 설정 */
 void CAN_Send(void);   /* TxData[0] 전송 */
