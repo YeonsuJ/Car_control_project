@@ -14,4 +14,4 @@
 | 버전 | 날짜   | 변경 내용 |
 |----------|--------------|-----------|
 | [`sensor_v1.5.0`](https://github.com/YeonsuJ/Car_control_project/commit/13f38c18cb6364108f1dbb893375f56113965320) | 2025-07-17 | CAN 송신 기반 초음파센서 -> 햅틱센서 기능 통합 (v1.5.0)|
-| [`sensor_v1.6.0`](https://github.com/YeonsuJ/Car_control_project/commit/4e33ac5c79cb0055fc08e2029c518f396682fa97) | 2025-07-24 | 기능별 파일 분할 및 코드 최적화 + CAN 통신 개선 및 속도 상향(500kbps) (v1.6.0)|
+| [`sensor_v1.6.0`](https://github.com/YeonsuJ/Car_control_project/commit/22e10d68004d4dc19ce922d08332d6f769065621) | 2025-07-24 | 기능별 파일 분할 및 코드 최적화 + CAN 통신 개선 및 속도 상향(500kbps) (v1.6.0)|
