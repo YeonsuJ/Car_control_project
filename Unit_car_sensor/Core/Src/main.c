@@ -112,11 +112,18 @@ int main(void)
 
 		  Ultrasonic_Trigger();
 
-		  // 3) 거리 조건 확인 후 CAN 데이터 설정
+		  // 거리 조건 확인 후 CAN 데이터 설정
 		  if (distance_front <= 10 || distance_rear <= 10)
 			TxData[0] = 1;
 		  else
 			TxData[0] = 0;
+
+		  // 2) 조도 조건 판단
+		  uint8_t light_condition = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0);
+		  if (light_condition == GPIO_PIN_RESET)
+		    TxData[1] = 1;
+		  else
+		    TxData[1] = 0;
 
 		  // 4) CAN 메시지 전송
 		  CAN_Send();
