@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "cmsis_os.h"
 #include "i2c.h"
 #include "spi.h"
 #include "tim.h"
@@ -41,8 +42,7 @@ MPU6050_t MPU6050;
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
-#define TRANSMIT_INTERVAL_MS 1
+float roll;
 
 /* USER CODE END PD */
 
@@ -54,31 +54,17 @@ MPU6050_t MPU6050;
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
-uint32_t lastTransmitTick = 0;
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+void MX_FREERTOS_Init(void);
 /* USER CODE BEGIN PFP */
-static float App_GetRollAngle(void);
-static void App_BuildPacket(uint8_t* packet_buffer, float roll_angle);
-static void App_HandleAckPayload(uint8_t* ack_payload);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-// =============================
-// NRF24 송신 패킷 구조 정의
-// -----------------------------
-// Byte 0   : 메시지 식별자 (1)
-// Byte 1~2 : roll (int16_t, 센서 측에서 ×100 배율 인코딩)
-// Byte 3~4 : accel_ms (uint16_t, 엑셀 유지 시간)
-// Byte 5~6 : brake_ms (uint16_t, 브레이크 유지 시간)
-// Byte 7   : direction (0: BACKWARD, 1: FORWARD)
-// 나머지 Byte 8~31 : 예약 or 미사용
-// =============================
+
 /* USER CODE END 0 */
 
 /**
@@ -114,7 +100,6 @@ int main(void)
   MX_TIM2_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-
   InputHandler_Init();
   CommHandler_Init();
 
@@ -124,41 +109,23 @@ int main(void)
 
   HAL_TIM_Base_Start_IT(&htim2);
 
-  uint8_t tx_packet[PAYLOAD_SIZE] = {0};
-  uint8_t ack_packet[ACK_PAYLOAD_SIZE] = {0};
-
   /* USER CODE END 2 */
+
+  /* Init scheduler */
+  osKernelInitialize();
+
+  /* Call init function for freertos objects (in cmsis_os2.c) */
+  MX_FREERTOS_Init();
+
+  /* Start scheduler */
+  osKernelStart();
+
+  /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
     while (1)
     {
-    	   uint32_t now = HAL_GetTick();
-
-            if (now - lastTransmitTick >= TRANSMIT_INTERVAL_MS)
-            {
-                lastTransmitTick = now;
-
-                float roll = App_GetRollAngle();
-
-                // 2. 전송 패킷 생성 (어떻게?) -> 내부 헬퍼 함수가 알아서
-                App_BuildPacket(tx_packet, roll);
-
-                // 3. 데이터 전송 (누구에게?) -> 통신 핸들러에게 위임
-                CommHandler_Transmit(tx_packet, PAYLOAD_SIZE);
-
-                // 4. 통신 결과 확인 및 처리
-                CommStatus_t status = CommHandler_CheckStatus(ack_packet, ACK_PAYLOAD_SIZE);
-                if (status == COMM_TX_SUCCESS)
-                {
-                    App_HandleAckPayload(ack_packet);
-                }
-                else if (status == COMM_TX_FAIL)
-                {
-                    // TODO: 통신 실패 시 처리 로직
-                }
-            }
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -207,70 +174,46 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 
-// ★★★ main 루프의 상세 로직을 담당하는 내부 헬퍼 함수들 ★★★
-
-/**
-  * @brief  MPU6050 센서로부터 Roll 각도를 읽어옵니다.
-  */
-static float App_GetRollAngle(void)
-{
-    MPU6050_Read_All(&hi2c2, &MPU6050);
-    return MPU6050.KalmanAngleX;
-}
-
-/**
-  * @brief  각 모듈에서 데이터를 가져와 전송 패킷을 구성합니다.
-  */
-static void App_BuildPacket(uint8_t* packet_buffer, float roll_angle)
-{
-    memset(packet_buffer, 0, PAYLOAD_SIZE);
-
-    packet_buffer[0] = 1; // ID
-
-    // Roll 값 인코딩
-    int16_t roll_encoded = (int16_t)(roll_angle * 100.0f);
-    memcpy(&packet_buffer[1], &roll_encoded, sizeof(int16_t));
-
-    // 버튼 입력 시간 가져오기
-    uint16_t accel_ms = InputHandler_GetAccelMillis();
-    uint16_t brake_ms = InputHandler_GetBrakeMillis();
-    memcpy(&packet_buffer[3], &accel_ms, sizeof(uint16_t));
-    memcpy(&packet_buffer[5], &brake_ms, sizeof(uint16_t));
-
-    // 방향 정보 가져오기
-    packet_buffer[7] = InputHandler_GetDirection();
-}
-
-/**
-  * @brief  수신된 ACK 페이로드를 처리합니다.
-  */
-static void App_HandleAckPayload(uint8_t* ack_payload)
-{
-    if (ack_payload[0] == 1)
-        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
-    else
-        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
-}
-
 // --- 콜백 함수들은 각 핸들러에게 작업을 위임 ---
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
+    // USER CODE BEGIN Callback 0
+    extern osSemaphoreId_t ackSemHandle; // CubeMX가 생성한 세마포어 핸들
+    // USER CODE END Callback 0
+
     if (GPIO_Pin == GPIO_PIN_3)
     {
-        CommHandler_IrqCallback();
+        // CommHandler_IrqCallback(); // 기존 호출 대신
+        osSemaphoreRelease(ackSemHandle); // 세마포어를 해제하여 ackHandlerTask를 깨움
         return;
     }
     InputHandler_GpioCallback(GPIO_Pin);
 }
+/* USER CODE END 4 */
 
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM4 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-    if (htim->Instance == TIM2)
-    {
-        InputHandler_TimerCallback();
-    }
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM4)
+  {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+  if (htim->Instance == TIM2)
+      InputHandler_TimerCallback();
+
+  /* USER CODE END Callback 1 */
 }
-/* USER CODE END 4 */
 
 /**
   * @brief  This function is executed in case of error occurrence.

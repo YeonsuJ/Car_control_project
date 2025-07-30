@@ -41,10 +41,6 @@ void CommHandler_Transmit(uint8_t* payload, uint8_t len)
 
 CommStatus_t CommHandler_CheckStatus(uint8_t* ack_payload, uint8_t len)
 {
-    if (!nrf_irq_flag)
-    {
-        return COMM_OK;
-    }
     nrf_irq_flag = 0;
     uint8_t status = nrf24_r_status();
     CommStatus_t result = COMM_OK;
