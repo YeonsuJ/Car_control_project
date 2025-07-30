@@ -123,6 +123,11 @@ int main(void)
       {
     	  // 새 명령 수신 시 모터/서보 제어 및 RPM 업데이트 동시 수행
     	  MotorControl_Update(&cmd);
+
+    	  // 전진/후진 + 브레이크 상태를 CAN으로 전송
+		  uint8_t dir = cmd.direction;
+		  uint8_t brake = (cmd.brake_ms > 0) ? 1 : 0;
+		  CAN_Send_DriveStatus(dir, brake);
       }
 
       // CAN 신호를 받아 다음 ACK 페이로드에 실릴 데이터를 설정

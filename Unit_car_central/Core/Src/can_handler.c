@@ -60,3 +60,26 @@ void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
 	  can_distance_signal = RxData[0];
   }
 }
+
+// 차량 상태 can 송신 함수 구현
+void CAN_Send_DriveStatus(uint8_t direction, uint8_t brake_status)
+{
+    CAN_TxHeaderTypeDef TxHeader;
+    uint8_t TxData[2];
+    uint32_t TxMailbox;
+
+    TxHeader.StdId = 0x321;  // 예시 ID, sensor에서 수신 필터 설정 필요
+    TxHeader.IDE = CAN_ID_STD;
+    TxHeader.RTR = CAN_RTR_DATA;
+    TxHeader.DLC = 2;
+    TxHeader.TransmitGlobalTime = DISABLE;
+
+    TxData[0] = direction;
+    TxData[1] = brake_status;
+
+    if (HAL_CAN_AddTxMessage(&hcan, &TxHeader, TxData, &TxMailbox) != HAL_OK)
+    {
+        Error_Handler();  // 전송 실패 시 처리
+    }
+}
+

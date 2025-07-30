@@ -16,5 +16,6 @@ extern volatile uint8_t can_distance_signal;
 void CANHandler_Init(void);
 void CAN_Filter_Config(CAN_HandleTypeDef *hcan_ptr);
 void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan);
+void CAN_Send_DriveStatus(uint8_t direction, uint8_t brake_status);
 
 #endif /* INC_CAN_HANDLER_H_ */
