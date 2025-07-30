@@ -57,6 +57,18 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define Brake_Left_LED_Pin GPIO_PIN_15
+#define Brake_Left_LED_GPIO_Port GPIOB
+#define Brake_Right_LED_Pin GPIO_PIN_8
+#define Brake_Right_LED_GPIO_Port GPIOA
+#define Front_Left_LED_Pin GPIO_PIN_9
+#define Front_Left_LED_GPIO_Port GPIOA
+#define Front_Right_LED_Pin GPIO_PIN_10
+#define Front_Right_LED_GPIO_Port GPIOA
+#define Rear_Left_LED_Pin GPIO_PIN_11
+#define Rear_Left_LED_GPIO_Port GPIOA
+#define Rear_Right_LED_Pin GPIO_PIN_12
+#define Rear_Right_LED_GPIO_Port GPIOA
 #define OLED_SCL_Pin GPIO_PIN_6
 #define OLED_SCL_GPIO_Port GPIOB
 #define OLED_SDA_Pin GPIO_PIN_7
