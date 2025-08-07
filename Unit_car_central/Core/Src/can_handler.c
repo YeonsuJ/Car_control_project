@@ -54,7 +54,7 @@ void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
   HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO1, &RxHeader, RxData);
 
   // 수신 ID와 데이터 길이 확인
-  if (RxHeader.StdId == 0x6A5 && RxHeader.DLC == 1)
+  if (RxHeader.StdId == 0x6A5 && RxHeader.DLC == 2)
   {
 	  // 거리 상태(0 또는 1)를 내부 변수에 저장
 	  can_distance_signal = RxData[0];
