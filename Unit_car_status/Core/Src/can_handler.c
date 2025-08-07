@@ -9,6 +9,7 @@
 // - 0x321 : [0] 전진/후진, [1] 브레이크 여부
 // =============================
 
+
 // can 수신을 위한 필터 및 수신 버퍼 구성
 CAN_FilterTypeDef sFilterConfig;
 CAN_RxHeaderTypeDef RxHeader;
