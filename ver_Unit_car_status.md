@@ -15,3 +15,4 @@
 |----------|--------------|-----------|
 | [`status_v1.5.0`](https://github.com/YeonsuJ/Car_control_project/commit/d7810ab06a289a489a91285c02ddfea00daa1e14) | 2025-07-17 | CAN 수신 기반 초음파센서 -> OLED 디버깅 기능 통합 (v1.5.0)|
 | [`status_v1.6.0`](https://github.com/YeonsuJ/Car_control_project/commit/ff784f4d59c5a10102964285e873eb8930eb3fa3) | 2025-07-24 | 파일분할 및 코드최적화, CAN 개선, ADC배터리측정 추가 (v1.6.0)|
+| [`status_v1.7.0`](https://github.com/YeonsuJ/Car_control_project/commit/e6da3eca9ead389a608fc11dc43a8671dc7fec93) | 2025-08-07 | RF 기반 기어/브레이크 상태 CAN 전송 및 LDR 조건부 전조등/후미등 제어 구현 (v1.7.0)|
