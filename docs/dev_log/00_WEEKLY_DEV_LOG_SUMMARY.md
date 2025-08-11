@@ -96,14 +96,16 @@
 |내용|문서 링크|커밋해시|
 |---|:---:|:---:|
 |Controller부 RTOS 포팅 완료|[V2.0.0_Controller_Porting_RTOS.md](./V2.0.0_Controller_Porting_RTOS.md)|[`controller_v2.0.0`](https://github.com/YeonsuJ/Car_control_project/commit/48f5d81bfadd766953063530f16cc98a43dc841b)|
-|전/후진 및 브레이크 상태에 따라 전조등·후미등 제어 로직 추가|[V1.7.0_Brk_Dir_LED_Ctrl.md](./V1.7.0_Brk_Dir_LED_Ctrl.md)|||
+|LDR 기반 전/후진 및 브레이크 상태에 따라 전조등·후미등 제어 로직 추가|[V1.7.0_LDR_Brk_Dir_LED_Ctrl.md](./V1.7.0_Brk_Dir_LED_Ctrl.md)|[`central_v1.7.0`](https://github.com/YeonsuJ/Car_control_project/commit/c3081ab3b98114f977e82bb3962f7fc1301cce8b) / [`sensor_v1.7.0`](https://github.com/YeonsuJ/Car_control_project/commit/2e1ab4625bc36b59d184030a2293edb108fda21f) / [`status_v1.7.0`](https://github.com/YeonsuJ/Car_control_project/commit/e6da3eca9ead389a608fc11dc43a8671dc7fec93) |
 
 ---
 
 ## 13주차 (25-08-04 ~ 25-08-10)
 |내용|문서 링크|커밋해시|
 |---|:---:|:---:|
+|핸들 디자인·3D 모델링 및 출력||
 |핸들에 전/후진 기어변속 디스플레이 추가|||
 |rpm 값 기반 최고속도 제한 기능 추가 및 Shift-lock 시스템 적용: DC모터 전/후진 전환 시 브레이크 입력 필수 조건 추가||
 |충돌감지센서동작 -> RTC 기반 충돌시각 기록 EEPROM 임시저장 후 SD카드(SPI) 저장 (DMA)||||
+
 
