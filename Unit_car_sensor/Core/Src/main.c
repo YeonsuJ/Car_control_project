@@ -119,8 +119,8 @@ int main(void)
 			TxData[0] = 0;
 
 		  // 2) 조도 조건 판단
-		  uint8_t light_condition = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0);
-		  if (light_condition == GPIO_PIN_RESET)
+		  uint8_t light_condition = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_3);
+		  if (light_condition == GPIO_PIN_SET)
 		    TxData[1] = 1;
 		  else
 		    TxData[1] = 0;

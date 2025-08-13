@@ -57,12 +57,12 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define LDR_IN_Pin GPIO_PIN_0
-#define LDR_IN_GPIO_Port GPIOB
 #define Rear_Trig_Pin GPIO_PIN_8
 #define Rear_Trig_GPIO_Port GPIOA
 #define Front_Trig_Pin GPIO_PIN_9
 #define Front_Trig_GPIO_Port GPIOA
+#define LDR_IN_Pin GPIO_PIN_3
+#define LDR_IN_GPIO_Port GPIOB
 #define Front_Echo_Pin GPIO_PIN_6
 #define Front_Echo_GPIO_Port GPIOB
 #define Rear_Echo_Pin GPIO_PIN_7
