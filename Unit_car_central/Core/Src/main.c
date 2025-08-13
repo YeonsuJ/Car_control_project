@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "cmsis_os.h"
 #include "can.h"
 #include "spi.h"
 #include "tim.h"
@@ -57,6 +58,7 @@
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+void MX_FREERTOS_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -111,27 +113,35 @@ int main(void)
   // 3. 모터 제어기 초기화 (PWM, 엔코더 시작)
   MotorControl_Init();
 
-  VehicleCommand_t cmd = {0};
+//  VehicleCommand_t cmd = {0};
 
   /* USER CODE END 2 */
+
+  /* Call init function for freertos objects (in cmsis_os2.c) */
+  MX_FREERTOS_Init();
+
+  /* Start scheduler */
+  osKernelStart();
+
+  /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
     while (1)
     {
-      if (RFHandler_GetNewCommand(&cmd))
-      {
-    	  // 새 명령 수신 시 모터/서보 제어 및 RPM 업데이트 동시 수행
-    	  MotorControl_Update(&cmd);
-
-    	  // 전진/후진 + 브레이크 상태를 CAN으로 전송
-		  uint8_t dir = cmd.direction;
-		  uint8_t brake = (cmd.brake_ms > 0) ? 1 : 0;
-		  CAN_Send_DriveStatus(dir, brake);
-      }
-
-      // CAN 신호를 받아 다음 ACK 페이로드에 실릴 데이터를 설정
-      RFHandler_SetAckPayload(can_distance_signal);
+//      if (RFHandler_GetNewCommand(&cmd))
+//      {
+//    	  // 새 명령 수신 시 모터/서보 제어 및 RPM 업데이트 동시 수행
+//    	  MotorControl_Update(&cmd);
+//
+//    	  // 전진/후진 + 브레이크 상태를 CAN으로 전송
+//		  uint8_t dir = cmd.direction;
+//		  uint8_t brake = (cmd.brake_ms > 0) ? 1 : 0;
+//		  CAN_Send_DriveStatus(dir, brake);
+//      }
+//
+//      // CAN 신호를 받아 다음 ACK 페이로드에 실릴 데이터를 설정
+//      RFHandler_SetAckPayload(can_distance_signal);
 
     /* USER CODE END WHILE */
 
@@ -188,6 +198,28 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     }
 }
 /* USER CODE END 4 */
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM3 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM3)
+  {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.

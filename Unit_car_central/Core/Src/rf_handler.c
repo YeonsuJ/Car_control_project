@@ -2,6 +2,7 @@
 #include "NRF24.h" // 저수준 드라이버 포함
 #include "NRF24_reg_addresses.h"
 #include <string.h> // memcpy를 위해 추가
+#include "cmsis_os.h" // Mutex 사용을 위해 추가
 
 // =============================
 // NRF24 수신(Rx) 패킷 구조 정의
@@ -52,15 +53,19 @@ void RFHandler_IrqCallback(void)
     nrf_irq_flag = 1;
 }
 
-// 다음 ACK 페이로드에 실릴 신호 설정
-void RFHandler_SetAckPayload(uint8_t signal)
+// 다음 ACK 페이로드에 실릴 신호 설정 (Mutex로 보호)
+void RFHandler_SetAckPayload(uint8_t signal, osMutexId mutex)
 {
-    // ACK 페이로드 버퍼의 첫 바이트에 신호값을 저장
-    ack_response[0] = signal;
+    if (osMutexWait(mutex, 10) == osOK) // 최대 10ms 대기
+    {
+        // ACK 페이로드 버퍼의 첫 바이트에 신호값을 저장
+        ack_response[0] = signal;
+        osMutexRelease(mutex);
+    }
 }
 
-// 새 명령 패킷이 수신되었을 때만 true 반환 및 값 복사
-bool RFHandler_GetNewCommand(VehicleCommand_t* command)
+// 새 명령 패킷이 수신되었을 때만 true 반환 및 값 복사 (Mutex로 보호)
+bool RFHandler_GetNewCommand(VehicleCommand_t* command, osMutexId mutex)
 {
     if (!nrf_irq_flag) {
         return false; // 새 데이터 없음
@@ -74,8 +79,13 @@ bool RFHandler_GetNewCommand(VehicleCommand_t* command)
         uint8_t rx_buffer[RX_PAYLOAD_SIZE] = {0};
         nrf24_receive(rx_buffer, RX_PAYLOAD_SIZE);
 
-        // ACK 페이로드 전송 (미리 설정된 ack_response 값을 보냄)
-        nrf24_transmit_rx_ack_pld(1, ack_response, ACK_PAYLOAD_SIZE);
+        // ACK 페이로드 전송 (Mutex로 보호된 ack_response 값을 보냄)
+        if (osMutexWait(mutex, 10) == osOK)
+        {
+            nrf24_transmit_rx_ack_pld(1, ack_response, ACK_PAYLOAD_SIZE);
+            osMutexRelease(mutex);
+        }
+
         nrf24_clear_rx_dr();
 
         if (rx_buffer[0] == 1) // ID가 1인 주행 명령일 경우 데이터 파싱
