@@ -5,7 +5,7 @@
 
 ## 설계도
 ![설계도](Basic_Sketch.png)
-![설계도](Steerig_Wheel.png)
+![설계도](Steering_Wheel.png)
 ![설계도](Cap.png)
 ## 모델링 결과
 
