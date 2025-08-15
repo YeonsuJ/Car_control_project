@@ -31,6 +31,10 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+// 센서 데이터 패킷 구조체 정의
+#include "can_handler.h"
+#include "ultrasonic.h"
+#include "motor_encoder.h"
 
 /* USER CODE END Includes */
 
@@ -57,10 +61,14 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define Rear_Trig_Pin GPIO_PIN_8
-#define Rear_Trig_GPIO_Port GPIOA
-#define Front_Trig_Pin GPIO_PIN_9
-#define Front_Trig_GPIO_Port GPIOA
+#define Rear_Trig_Pin GPIO_PIN_12
+#define Rear_Trig_GPIO_Port GPIOB
+#define Front_Trig_Pin GPIO_PIN_13
+#define Front_Trig_GPIO_Port GPIOB
+#define Encoder_A_Pin GPIO_PIN_8
+#define Encoder_A_GPIO_Port GPIOA
+#define Encoder_B_Pin GPIO_PIN_9
+#define Encoder_B_GPIO_Port GPIOA
 #define LDR_IN_Pin GPIO_PIN_3
 #define LDR_IN_GPIO_Port GPIOB
 #define Front_Echo_Pin GPIO_PIN_6
@@ -69,7 +77,12 @@ void Error_Handler(void);
 #define Rear_Echo_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
-
+typedef struct {
+    uint32_t distance_front;
+    uint32_t distance_rear;
+    uint8_t  light_condition;
+    float    rpm;
+} SensorData_t;
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

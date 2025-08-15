@@ -34,14 +34,14 @@ void Ultrasonic_Init(void)
 void Ultrasonic_Trigger(void)
 {
 	// 1) 전방 트리거
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_SET);
 	delay_us(10);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_RESET);
 
 	// 2) 후방 트리거
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
 	delay_us(10);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
 }
 
 // input 캡처 콜백 함수
@@ -90,12 +90,3 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
     }
   }
 }
-
-
-
-
-
-
-
-
-

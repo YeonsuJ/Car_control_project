@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "cmsis_os.h"
 #include "can.h"
 #include "tim.h"
 #include "gpio.h"
@@ -26,6 +27,7 @@
 /* USER CODE BEGIN Includes */
 #include "can_handler.h"
 #include "ultrasonic.h"
+#include "motor_encoder.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -51,6 +53,7 @@
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+void MX_FREERTOS_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -92,42 +95,27 @@ int main(void)
   MX_CAN_Init();
   MX_TIM2_Init();
   MX_TIM4_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
-
-  CAN_tx_Init();
-  Ultrasonic_Init();
-
-  uint32_t prev_tick = 0;
-
+  DWT_Init(); // <<-- 추가: DWT 정밀 타이머 초기화
   /* USER CODE END 2 */
+
+  /* Init scheduler */
+  osKernelInitialize();
+
+  /* Call init function for freertos objects (in cmsis_os2.c) */
+  MX_FREERTOS_Init();
+
+  /* Start scheduler */
+  osKernelStart();
+
+  /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  // 20ms 주기 체크
-	  if (HAL_GetTick() - prev_tick >= 100) /* 100 ms(10 Hz) */
-	  {
-		  prev_tick = HAL_GetTick();
 
-		  Ultrasonic_Trigger();
-
-		  // 거리 조건 확인 후 CAN 데이터 설정
-		  if (distance_front <= 10 || distance_rear <= 10)
-			TxData[0] = 1;
-		  else
-			TxData[0] = 0;
-
-		  // 2) 조도 조건 판단
-		  uint8_t light_condition = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_3);
-		  if (light_condition == GPIO_PIN_SET)
-		    TxData[1] = 1;
-		  else
-		    TxData[1] = 0;
-
-		  // 4) CAN 메시지 전송
-		  CAN_Send();
-	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -177,6 +165,28 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM3 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM3)
+  {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.
