@@ -2,7 +2,7 @@
 #include "NRF24.h" // 저수준 드라이버 포함
 #include "NRF24_reg_addresses.h"
 #include <string.h> // memcpy를 위해 추가
-#include "cmsis_os.h" // Mutex 사용을 위해 추가
+#include "cmsis_os.h" // ★ 세마포어 사용
 
 // =============================
 // NRF24 수신(Rx) 패킷 구조 정의
@@ -19,8 +19,10 @@
 #define RX_PAYLOAD_SIZE 8
 #define ACK_PAYLOAD_SIZE 2
 
-// === 내부 전용 변수들 (static으로 외부 접근 차단) ===
-static volatile uint8_t nrf_irq_flag = 0;
+// ★ FreeRTOS 세마포어 (freertos.c에서 생성됨)
+extern osSemaphoreId_t RFSemHandle;
+
+// 내부 ACK 응답 버퍼
 static uint8_t ack_response[ACK_PAYLOAD_SIZE] = {0};
 
 // NRF24 모듈 수신 초기화
@@ -47,60 +49,54 @@ void RFHandler_Init(void)
     nrf24_listen(); // 수신 대기 시작
 }
 
-// IRQ 핀 EXTI 발생 시 호출
+// ★ EXTI에서 호출되는 IRQ 콜백: 플래그 대신 세마포어 릴리즈
 void RFHandler_IrqCallback(void)
 {
-    nrf_irq_flag = 1;
-}
-
-// 다음 ACK 페이로드에 실릴 신호 설정 (Mutex로 보호)
-void RFHandler_SetAckPayload(uint8_t signal, osMutexId mutex)
-{
-    if (osMutexWait(mutex, 10) == osOK) // 최대 10ms 대기
-    {
-        // ACK 페이로드 버퍼의 첫 바이트에 신호값을 저장
-        ack_response[0] = signal;
-        osMutexRelease(mutex);
+    // 커널 실행 중 + 핸들 유효할 때만 ISR-safe 릴리즈
+    if (osKernelGetState() == osKernelRunning && RFSemHandle) {
+        (void)osSemaphoreRelease(RFSemHandle);
     }
 }
 
-// 새 명령 패킷이 수신되었을 때만 true 반환 및 값 복사 (Mutex로 보호)
-bool RFHandler_GetNewCommand(VehicleCommand_t* command, osMutexId mutex)
+// 다음 ACK 페이로드에 실릴 신호 설정
+void RFHandler_SetAckPayload(uint8_t signal)
 {
-    if (!nrf_irq_flag) {
+    // ACK 페이로드 버퍼의 첫 바이트에 신호값을 저장
+    ack_response[0] = signal;
+}
+
+// ★ 새 명령 유무는 RX_DR 비트로 판단 (플래그 제거)
+bool RFHandler_GetNewCommand(VehicleCommand_t* command)
+{
+    // 수신 데이터 준비 여부 확인
+    uint8_t status = nrf24_r_status();
+    if ((status & (1U << RX_DR)) == 0U) {
         return false; // 새 데이터 없음
     }
 
-    nrf_irq_flag = 0; // 플래그 즉시 초기화
-    uint8_t status = nrf24_r_status();
+    // 데이터 수신
+    uint8_t rx_buffer[RX_PAYLOAD_SIZE] = {0};
+    nrf24_receive(rx_buffer, RX_PAYLOAD_SIZE);
 
-    if (status & (1 << RX_DR))
+    // 미리 준비된 ACK 페이로드 송신
+    nrf24_transmit_rx_ack_pld(1, ack_response, ACK_PAYLOAD_SIZE);
+
+    // RX_DR 클리어
+    nrf24_clear_rx_dr();
+
+    // 파싱
+    if (rx_buffer[0] == 1)  // ID == 1 : 주행 명령
     {
-        uint8_t rx_buffer[RX_PAYLOAD_SIZE] = {0};
-        nrf24_receive(rx_buffer, RX_PAYLOAD_SIZE);
+        int16_t roll_encoded = 0;
+        memcpy(&roll_encoded, &rx_buffer[1], sizeof(int16_t));
+        command->roll = ((float)roll_encoded) / 100.0f;
 
-        // ACK 페이로드 전송 (Mutex로 보호된 ack_response 값을 보냄)
-        if (osMutexWait(mutex, 10) == osOK)
-        {
-            nrf24_transmit_rx_ack_pld(1, ack_response, ACK_PAYLOAD_SIZE);
-            osMutexRelease(mutex);
-        }
+        memcpy(&command->accel_ms,  &rx_buffer[3], sizeof(uint16_t));
+        memcpy(&command->brake_ms,  &rx_buffer[5], sizeof(uint16_t));
+        command->direction = rx_buffer[7];
 
-        nrf24_clear_rx_dr();
-
-        if (rx_buffer[0] == 1) // ID가 1인 주행 명령일 경우 데이터 파싱
-        {
-            int16_t roll_encoded = 0;
-            memcpy(&roll_encoded, &rx_buffer[1], sizeof(int16_t));
-            command->roll = ((float)roll_encoded) / 100.0f;
-
-            memcpy(&command->accel_ms, &rx_buffer[3], sizeof(uint16_t));
-            memcpy(&command->brake_ms, &rx_buffer[5], sizeof(uint16_t));
-            command->direction = rx_buffer[7];
-
-            return true; // 파싱 성공, 새 데이터 있음
-        }
+        return true;
     }
 
-    return false; // 유효한 데이터 없음
+    return false; // 유효하지 않은 ID
 }

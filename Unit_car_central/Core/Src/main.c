@@ -100,7 +100,6 @@ int main(void)
   MX_TIM2_Init();
   MX_SPI1_Init();
   MX_TIM1_Init();
-  MX_TIM4_Init();
   MX_CAN_Init();
   /* USER CODE BEGIN 2 */
 
@@ -113,9 +112,10 @@ int main(void)
   // 3. 모터 제어기 초기화 (PWM, 엔코더 시작)
   MotorControl_Init();
 
-//  VehicleCommand_t cmd = {0};
-
   /* USER CODE END 2 */
+
+  /* Init scheduler */
+  osKernelInitialize();
 
   /* Call init function for freertos objects (in cmsis_os2.c) */
   MX_FREERTOS_Init();

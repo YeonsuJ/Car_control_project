@@ -72,10 +72,6 @@ void Error_Handler(void);
 #define IRQ_Pin GPIO_PIN_3
 #define IRQ_GPIO_Port GPIOB
 #define IRQ_EXTI_IRQn EXTI3_IRQn
-#define ENCODER_A_Pin GPIO_PIN_6
-#define ENCODER_A_GPIO_Port GPIOB
-#define ENCODER_B_Pin GPIO_PIN_7
-#define ENCODER_B_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
