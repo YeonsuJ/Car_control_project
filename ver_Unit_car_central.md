@@ -10,7 +10,6 @@
 | [`45c4e16`](https://github.com/YeonsuJ/Car_control_project/commit/45c4e164ce43241788da8687f2dbf96ccc241a7f) | 2025-06-05 | DC 모터 제어 및 엔코더 기반 RPM 측정 기능 구현 |
 | [`3d1299e`](https://github.com/YeonsuJ/Car_control_project/commit/3d1299e5b8503f3396420f090a27b58ee6edd679) | 2025-06-09 | 버튼 눌림 시간 기반 DC 모터 PWM 제어 및 RPM 계산 후 OLED 실시간 상태 출력 로직 추가 |
 | [`ad9f4bc`](https://github.com/YeonsuJ/Car_control_project/commit/ad9f4bc341844dbb1dcecefefb23643b87a2f076) | 2025-06-11 | 로커 스위치를 이용한 DC 모터 전/후진 제어 및 OLED 실시간 상태 표시 기능 추가|
-| [`3c3b16f`](https://github.com/YeonsuJ/Car_control_project/commit/3c3b16f653379466fd9c0d39f7b53c472481e6a6) | 2025-06-22 | Shift-lock 시스템 적용: DC모터 전/후진 전환 시 브레이크 입력 필수 조건 추가|
 | [`b474df6`](https://github.com/YeonsuJ/Car_control_project/commit/b474df67b9a24d75a08725cf00dbaa94170cabac) | 2025-06-27 | DC모터와 Servo모터 동작 기능 통합 및 핀 라벨링 추가|
 | [`2da04ab`](https://github.com/YeonsuJ/Car_control_project/commit/2da04ab6ffaecc1a9f892ea96c2d268be7718beb) | 2025-07-15 | 초음파 거리값 기반 car_sensor → car_central 간 CAN 햅틱 제어 추가<br> (v1.2.0-beta : RF 양방향 추가 전)|
 
@@ -23,4 +22,5 @@
 | [`central_v1.1.0`](https://github.com/YeonsuJ/Car_control_project/commit/94a4a332562ac80192bba8cc971c298cab48cbfd) | 2025-07-11 | 코드 리팩토링 및 전/후진 기능, 모터 RPM 측정 로직 추가 (v1.1.0)|
 | [`central_v1.5.0`](https://github.com/YeonsuJ/Car_control_project/commit/fb063337c0dd13055ecf7afc8d4cca3d3b347613) | 2025-07-17 | RF 기반 모터 제어 + CAN 초음파 거리 → 조건부 ACK 응답 → 햅틱 제어 연동 (v1.5.0)|
 | [`central_v1.6.0`](https://github.com/YeonsuJ/Car_control_project/commit/f1f14c615f58d526c636ad07ba73be2855ed3e86) | 2025-07-24 | 기능별 파일 분할 및 코드 최적화 + CAN 통신 개선 및 속도 상향(500kbps) (v1.6.0)|
-| [`central_v1.7.0`](https://github.com/YeonsuJ/Car_control_project/commit/c3081ab3b98114f977e82bb3962f7fc1301cce8b) | 2025-08-07 | RF 기반 기어/브레이크 상태 CAN 전송 및 LDR 조건부 전조등/후미등 제어 구현 (v1.7.0)|
+| [`central_v1.7.0`](https://github.com/YeonsuJ/Car_control_project/commit/c3081ab3b98114f977e82bb3962f7fc1301cce8b) | 2025-08-02 | RF 기반 기어/브레이크 상태 CAN 전송 및 LDR 조건부 전조등/후미등 제어 구현 (v1.7.0)|
+| [`central_v2.0.0`](https://github.com/YeonsuJ/Car_control_project/commit/0227f3efb329d7939411c427968ac695a747d304) | 2025-08-08 | Encoder 센서 sensor부로 위임 및 RTOS 병합완료 (v2.0.0)|
