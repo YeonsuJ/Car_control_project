@@ -103,8 +103,8 @@
 ## 13주차 (25-08-04 ~ 25-08-10)
 |내용|문서 링크|커밋해시|
 |---|:---:|:---:|
-|핸들 디자인·3D 모델링 및 출력||
-|central부 RTOS 포팅 완료||
+|핸들 디자인·3D 모델링 및 출력|[00_Modeling_Log.md](../3d_model/00_Modeling_Log.md)|-|
+|central부 RTOS 포팅 완료|[V2.0.0_Central_Porting_RTOS.md](./V2.0.0_Central_Porting_RTOS.md)|[`central_v2.0.0`](https://github.com/YeonsuJ/Car_control_project/commit/b4040d90dd0db0ba8075e1ecb5af2c03d405105b)|
 
 ---
 
@@ -114,4 +114,5 @@
 |핸들에 전/후진 기어변속 디스플레이 추가|||
 |rpm 값 기반 최고속도 제한 기능 추가 및 Shift-lock 시스템 적용: DC모터 전/후진 전환 시 브레이크 입력 필수 조건 추가||
 |충돌감지센서동작 -> RTC 기반 충돌시각 기록 EEPROM 임시저장 후 SD카드(SPI) 저장 (DMA)||||
+
 
