@@ -105,15 +105,26 @@
 |---|:---:|:---:|
 |핸들 디자인·3D 모델링 및 출력|[00_Modeling_Log.md](../3d_model/00_Modeling_Log.md)|모델링 파일 : [Cap.ipt](../3d_model/Cap.ipt) / [Steering_Wheel.ipt](../3d_model/Steering_Wheel.ipt)|
 |central부 RTOS 포팅 완료|[V2.0.0_Central_Porting_RTOS.md](./V2.0.0_Central_Porting_RTOS.md)|[`central_v2.0.0`](https://github.com/YeonsuJ/Car_control_project/commit/b4040d90dd0db0ba8075e1ecb5af2c03d405105b)|
+|Sensor부 RTOS 포팅 완료|[V2.0.0_Sensor_Porting_RTOS.md](./V2.0.0_Sensor_Porting_RTOS.md)|[`sensor_v2.0.0`](https://github.com/YeonsuJ/Car_control_project/commit/e2be52947bca1ff94aee103a3060253fd54f70a2)|
+|Status부 RTOS 포팅 완료|[V2.0.0_Status_Porting_RTOS.md](./V2.0.0_Status_Porting_RTOS.md)|[`status_v2.0.0`]()|
 
 ---
 
 ## 14주차 (25-08-11 ~ 25-08-17)
 |내용|문서 링크|커밋해시|
 |---|:---:|:---:|
-|핸들에 전/후진 기어변속 디스플레이 추가|||
-|rpm 값 기반 최고속도 제한 기능 추가 및 Shift-lock 시스템 적용: DC모터 전/후진 전환 시 브레이크 입력 필수 조건 추가||
+|차량부 부품 재배치 및 회로, 케이블 정리|||
+|컨트롤러 전/후진 기어변속 및 RPM 디스플레이 추가|||
 |충돌감지센서동작 -> RTC 기반 충돌시각 기록 EEPROM 임시저장 후 SD카드(SPI) 저장 (DMA)||||
+|차량부 PCB 설계||
+
+---
+
+## 15주차 (25-08-18 ~ 25-08-24)
+|내용|문서 링크|커밋해시|
+|---|:---:|:---:|
+|최종 코드 리팩토링 및 개발일지 정리|||
+
 
 
 
