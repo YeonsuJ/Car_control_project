@@ -15,3 +15,5 @@
 |----------|--------------|-----------|
 | [`sensor_v1.5.0`](https://github.com/YeonsuJ/Car_control_project/commit/13f38c18cb6364108f1dbb893375f56113965320) | 2025-07-17 | CAN 송신 기반 초음파센서 -> 햅틱센서 기능 통합 (v1.5.0)|
 | [`sensor_v1.6.0`](https://github.com/YeonsuJ/Car_control_project/commit/22e10d68004d4dc19ce922d08332d6f769065621) | 2025-07-24 | 기능별 파일 분할 및 코드 최적화 + CAN 통신 개선 및 속도 상향(500kbps) (v1.6.0)|
+| [`sensor_v1.7.0`](https://github.com/YeonsuJ/Car_control_project/commit/1915c9a880efffe7c2f0f54a3f807f5609813a92) | 2025-08-02 | RF 기반 기어/브레이크 상태 CAN 전송 및 LDR 조건부 전조등/후미등 제어 구현 (v1.7.0)|
+| [`sensor_v2.0.0`](https://github.com/YeonsuJ/Car_control_project/commit/e2be52947bca1ff94aee103a3060253fd54f70a2) | 2025-08-08 | Encoder 센서 위임 및 RTOS 병합완료 (v2.0.0)|
