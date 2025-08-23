@@ -105,9 +105,33 @@ STM32CubeIDE에서 GitHub와 연동하려면, GitHub 계정의 패스워드 대�
 - STM32CubeIDE에서 Git 기능 사용 시 로그인 창이 뜨면,  
   - **Username**: GitHub ID  
   - **Password**: 방금 생성한 토큰 문자열을 붙여넣기  
-<br>
 
 이 과정을 통해 GitHub 저장소에 안전하게 접근하고, CubeIDE 내부에서 **Push, Pull, Clone 등의 Git 기능을 직접 사용할 수 있음.**
+
+<br>
+
+
+### CubeIDE에 저장된 이전 Github 토큰 삭제 후 새로 등록하기
+
+CubeIDE가 잘못된(만료된) 비밀번호를 기억하고 있는 것을 지우고, 다시 인증 정보를 물어보도록 만드는 과정
+1. CubeIDE 환경설정(Preferences) 열기
+  - 상단 메뉴에서 Window -> Preferences 로 이동
+2. 보안 저장소(Secure Storage) 메뉴로 이동
+  - 왼쪽의 트리 메뉴에서 Security -> Secure Storage 를 선택
+3. 저장된 내용(Contents) 확인 및 삭제
+  - Secure Storage 페이지에서 Contents 탭을 클릭
+  - 여기서 CubeIDE가 기억하고 있는 여러 로그인 정보를 볼 수 있다. [Git] 이나 github.com 과 관련된 항목을 찾아보면 되고, 보통 git:https://github.com 와 같은 형태로 저장되어 있다.
+  - 해당 항목을 선택하고 Delete 버튼을 눌러 삭제
+  - Apply and Close 를 눌러 환경설정 창 닫기
+4. Git 작업 재시도 (Push)
+  - 이제 원격 저장소에 Push (프로젝트 우클릭 -> Team -> Push to Upstream)
+  - CubeIDE가 인증 정보가 없다는 것을 인지하고, 사용자 이름과 비밀번호를 묻는 로그인 창 팝업
+5. 새 토큰 입력
+  - 로그인 창이 나타나면 다음 정보를 입력
+    - User: 본인의 Github 사용자 이름(username)
+    - Password: 새로 발급받은 개인용 액세스 토큰(PAT) 전체를 복붙 (Github 비밀번호 아님주의!)
+  - OK 또는 Login 버튼을 누르면 인증이 성공하여 Push 작업이 정상적으로 완료
+<br>
 
 ---
 ## IDE에서 브랜치 switching 간 .settings/language.settings.xml 변경사항으로 인한 잦은 충돌 발생
