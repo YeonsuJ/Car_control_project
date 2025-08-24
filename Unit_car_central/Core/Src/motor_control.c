@@ -9,6 +9,13 @@ extern TIM_HandleTypeDef htim2; // 서보 모터 PWM 타이머
 #define MOTOR_BACKWARD()    do { HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_SET); HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET); } while (0)
 
 
+// === DC 모터 제어를 위한 새로운 매크로 ===
+#define MAX_DUTY            1000    // PWM 최대 듀티 값 (htim1의 ARR 값에 맞춰 설정)
+#define MIN_DUTY_ON_ACCEL   400     // 가속 시작 시 최소 듀티 (모터가 돌기 시작하는 최소값)
+#define ACCEL_SENSITIVITY   0.8f    // 값이 클수록 버튼 누르는 시간에 비해 속도가 빠르게 증가
+#define COAST_DECREMENT     3      // 아무 버튼도 안 눌렀을 때 서서히 감속되는 값
+#define BRAKE_STEP          500     // 브레이크 버튼 눌렀을 때 감속되는 값
+
 void MotorControl_Init(void)
 {
     // PWM 타이머 시작
@@ -38,26 +45,43 @@ void Control_Servo(float roll)
     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, pwm_servo);
 }
 
-// DC 모터 제어 함수
+// DC 모터 제어 함수 (수정됨)
 void Control_DcMotor(uint16_t accel_ms, uint16_t brake_ms)
 {
-    static int16_t duty = 0;
-    const int16_t accel_step = 30;
-    const int16_t brake_step = 100;
-    const int16_t max_duty = 930;
+    static int16_t current_duty = 0;
 
-    if (brake_ms > 0) {
-        duty -= brake_step;
-    } else if (accel_ms > 0) {
-        if (duty == 0) duty = 300;
-        duty += accel_step;
-    } else if (accel_ms == 0) {
-        duty -= accel_step;
+    if (brake_ms > 0)
+    {
+        // 브레이크 버튼이 눌리면 빠르게 감속합니다.
+        current_duty -= BRAKE_STEP;
+    }
+    else if (accel_ms > 0)
+    {
+        // 가속 버튼이 눌리면, 눌린 시간을 기반으로 목표 듀티를 계산합니다.
+        // 오래 누를수록 target_duty 값이 커집니다.
+        int16_t target_duty = (int16_t)(MIN_DUTY_ON_ACCEL + (accel_ms * ACCEL_SENSITIVITY));
+
+        // 현재 듀티를 목표 듀티로 설정합니다.
+        // (만약 더 부드러운 가속을 원한다면, current_duty를 target_duty까지 점진적으로 증가시키는 로직을 추가할 수 있습니다.)
+        current_duty = target_duty;
+    }
+    else // 아무 버튼도 눌리지 않았을 때
+    {
+        // 서서히 속도를 줄여 관성 주행(Coasting)을 구현합니다.
+        current_duty -= COAST_DECREMENT;
     }
 
-    if (duty < 0) duty = 0;
-    if (duty > max_duty) duty = max_duty;
-    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4, duty);
+    // 듀티 값이 유효한 범위를 벗어나지 않도록 제한합니다.
+    if (current_duty > MAX_DUTY)
+    {
+        current_duty = MAX_DUTY;
+    }
+    if (current_duty < 0)
+    {
+        current_duty = 0;
+    }
+
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4, current_duty);
 }
 
 // 모터 방향 제어 함수

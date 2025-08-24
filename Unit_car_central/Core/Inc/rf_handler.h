@@ -10,6 +10,7 @@ typedef struct {
     uint16_t accel_ms;
     uint16_t brake_ms;
     uint8_t direction;
+    bool rf_status;
 } VehicleCommand_t;
 
 /**
@@ -23,11 +24,8 @@ void RFHandler_Init(void);
  */
 void RFHandler_IrqCallback(void);
 
-/**
- * @brief  다음에 전송할 ACK 페이로드 데이터를 설정
- * @param  signal: ACK 페이로드에 담을 8비트 신호 (can_distance_signal)
- */
-void RFHandler_SetAckPayload(uint8_t signal);
+
+void RFHandler_SetAckPayload(uint8_t* payload, uint8_t length);
 
 /**
  * @brief  새로운 주행 명령이 수신되었는지 확인하고, 있다면 데이터를 파싱하여 반환

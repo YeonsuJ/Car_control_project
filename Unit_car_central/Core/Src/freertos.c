@@ -25,7 +25,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <string.h>
+#include <string.h> // memcpy를 사용하기 위해 필요
 #include "motor_control.h"
 #include "can_handler.h"
 #include "rf_handler.h"
@@ -38,7 +38,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define RF_SEMAPHORE_TIMEOUT 250 // 250ms 동안 RF 신호가 없으면 실패로 간주
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -121,7 +121,7 @@ void MX_FREERTOS_Init(void) {
   CANTxQueueHandle = osMessageQueueNew (2, sizeof(VehicleCommand_t), &CANTxQueue_attributes);
 
   /* creation of CANRxQueue */
-  CANRxQueueHandle = osMessageQueueNew (1, sizeof(uint8_t), &CANRxQueue_attributes);
+  CANRxQueueHandle = osMessageQueueNew (1, sizeof(CAN_RxPacket_t), &CANRxQueue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -155,28 +155,60 @@ void StartRFTask(void *argument)
 {
   /* USER CODE BEGIN StartRFTask */
 	VehicleCommand_t cmd = {0};
-	uint8_t can_distance_signal = 0;
 
+	//큐에서 받을 데이터를 담을 구조체 변수
+	CAN_RxPacket_t received_can_packet;
+
+	// RF ACK 페이로드로 보낼 3바이트 데이터 버퍼 선언 및 초기화
+	// [0]:햅틱, [1]:RPM(하위), [2]:RPM(상위)
+	uint8_t ack_payload[3] = {0};
   /* Infinite loop */
 	for(;;)
 	  {
-	      // 1. RF 수신 인터럽트가 발생할 때까지 대기
-		  osSemaphoreAcquire(RFSemHandle, osWaitForever);
-
+	      // 1. RF 수신 인터럽트를 타임아웃과 함께 대기
+		if (osSemaphoreAcquire(RFSemHandle, RF_SEMAPHORE_TIMEOUT) == osOK)
+		{
 	      // 2. CAN 수신 큐에서 최신 거리 값을 논블로킹으로 확인
-		  osMessageQueueGet(CANRxQueueHandle, &can_distance_signal, NULL, 0U);
+		  // 성공적으로 새 데이터를 받으면 ack_payload를 업데이트
+		  if (osMessageQueueGet(CANRxQueueHandle, &received_can_packet, NULL, 0U) == osOK)
+		  {
+			  // 큐에서 받은 구조체 데이터로 ack_payload 배열 채우기
 
+			  // ack_payload[0]에는 햅틱을 위한 distance_signal 저장
+			  ack_payload[0] = received_can_packet.distance_signal;
+
+			  // memcpy를 사용하여 RPM 값을 페이로드에 저장
+			  uint16_t rpm_value = received_can_packet.motor_rpm;
+			  // rpm_value 변수의 메모리 내용을 ack_payload[1] 주소에 2바이트(sizeof(uint16_t))만큼 복사합니다.
+			  // 이 방식은 시스템의 Endianness(리틀/빅 엔디안)에 따라 자동으로 바이트 순서가 결정됩니다.
+			  memcpy(&ack_payload[1], &rpm_value, sizeof(uint16_t));
+		  }
 	      // 3. RF 수신 버퍼에 있는 모든 명령을 처리
 		  while (RFHandler_GetNewCommand(&cmd)) {
+
+			  // 수신 성공 시, 구조체에 RF 상태(true)를 기록
+			  cmd.rf_status = true;
+
 	          // 4. 모터 제어 업데이트
 			  MotorControl_Update(&cmd);
 
 	          // 5. CAN 전송을 위해 수신한 cmd 구조체 전체를 CANTxQueue에 넣음
 			  osMessageQueuePut(CANTxQueueHandle, &cmd, 0U, 0U);
 
-	          // 6. 컨트롤러에 보낼 ACK 페이로드에 거리 값 설정
-			  RFHandler_SetAckPayload(can_distance_signal);
+	          // 6. 컨트롤러에 보낼 ACK 페이로드 설정 (배열과 크기 전달)
+			  // GetNewCommand 함수 내부에서 ACK를 보내므로, 이 함수를 호출한 직후에 ACK 페이로드를 설정해야 다음 ACK에 반영됨 (while loop 내부)
+	          // (가장 최신 CAN 데이터로 매번 ACK 페이로드를 설정)
+			  RFHandler_SetAckPayload(ack_payload, sizeof(ack_payload));
 		  }
+		}
+		else
+		{
+			// RF 신호 수신 타임아웃 (실패)
+			// RF 실패 상태를 CANTask로 알리기 위해 상태 메시지 전송
+			memset(&cmd, 0, sizeof(VehicleCommand_t)); // 안전을 위해 주행 명령 초기화
+			cmd.rf_status = false; // 구조체에 RF 상태(false) 기록
+			osMessageQueuePut(CANTxQueueHandle, &cmd, 0U, 0U); // CANTask로 전송
+		}
 	  }
   /* USER CODE END StartRFTask */
 }
@@ -202,9 +234,10 @@ void StartCANTask(void *argument)
       // 수신한 구조체에서 필요한 데이터 추출
       uint8_t dir = received_cmd.direction;
       uint8_t brake = (received_cmd.brake_ms > 0) ? 1 : 0;
+      bool rf_ok = received_cmd.rf_status;
 
       // 실제 CAN 전송 함수 호출
-	  CAN_Send_DriveStatus(dir, brake);
+      CAN_Send_DriveStatus(dir, brake, rf_ok);
   }
   /* USER CODE END StartCANTask */
 }

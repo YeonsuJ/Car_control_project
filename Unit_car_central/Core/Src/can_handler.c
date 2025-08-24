@@ -58,29 +58,42 @@ void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
   HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO1, &RxHeader, RxData);
 
-  if (RxHeader.StdId == 0x6A5 && RxHeader.DLC >= 1)
+  if (RxHeader.StdId == 0x6A5 && RxHeader.DLC >= 4)
   {
-      // ⭐️ 수신한 데이터(RxData[0])를 CANRxQueue에 직접 전송
-      // 이 함수 호출 하나로 데이터 전송과 CANTask 깨우기가 모두 완료됩니다.
-      osMessageQueuePut(CANRxQueueHandle, &RxData[0], 0U, 0U);
+	  // 1. 보낼 데이터를 담을 구조체 변수 선언
+	  CAN_RxPacket_t rx_packet;
+
+	  // 2. 수신한 데이터를 구조체에 복사
+
+	  // RxData[0] 값이 1, 2, 3 중 하나일 때만 1로, 그 외에는 0으로 변환
+	  rx_packet.distance_signal = (RxData[0] >= 1 && RxData[0] <= 3) ? 1 : 0;
+
+	  // 2바이트를 조합하여 16비트 RPM 값으로 복원
+	  // RxData[3]가 상위 바이트(MSB), RxData[2]가 하위 바이트(LSB)
+	  // 예: RxData[3]=0x01, RxData[2]=0x2C -> (0x01 << 8) | 0x2C -> 0x012C (300)
+	  rx_packet.motor_rpm = (uint16_t)(RxData[3] << 8) | RxData[2];
+
+      // 3. 구조체 변수의 주소를 큐로 전송 , 이 함수 호출 하나로 데이터 전송과 CANTask 깨우기가 모두 완료됨
+      osMessageQueuePut(CANRxQueueHandle, &rx_packet, 0U, 0U);
   }
 }
 
 // 차량 상태 can 송신 함수 구현
-void CAN_Send_DriveStatus(uint8_t direction, uint8_t brake_status)
+void CAN_Send_DriveStatus(uint8_t direction, uint8_t brake_status, uint8_t rf_status)
 {
     CAN_TxHeaderTypeDef TxHeader;
-    uint8_t TxData[2];
+    uint8_t TxData[3];
     uint32_t TxMailbox;
 
     TxHeader.StdId = 0x321;  // 예시 ID, sensor에서 수신 필터 설정 필요
     TxHeader.IDE = CAN_ID_STD;
     TxHeader.RTR = CAN_RTR_DATA;
-    TxHeader.DLC = 2;
+    TxHeader.DLC = 3;
     TxHeader.TransmitGlobalTime = DISABLE;
 
     TxData[0] = direction;
     TxData[1] = brake_status;
+    TxData[2] = rf_status;
 
     if (HAL_CAN_AddTxMessage(&hcan, &TxHeader, TxData, &TxMailbox) != HAL_OK)
     {

@@ -17,9 +17,9 @@
 
 // 페이로드 크기 정의
 #define RX_PAYLOAD_SIZE 8
-#define ACK_PAYLOAD_SIZE 2
+#define ACK_PAYLOAD_SIZE 3
 
-// ★ FreeRTOS 세마포어 (freertos.c에서 생성됨)
+// ★ FreeRTOS 세마포어
 extern osSemaphoreId_t RFSemHandle;
 
 // 내부 ACK 응답 버퍼
@@ -58,11 +58,16 @@ void RFHandler_IrqCallback(void)
     }
 }
 
-// 다음 ACK 페이로드에 실릴 신호 설정
-void RFHandler_SetAckPayload(uint8_t signal)
+// 다음 ACK 페이로드에 실릴 데이터 배열 설정
+void RFHandler_SetAckPayload(uint8_t* payload, uint8_t length)
 {
-    // ACK 페이로드 버퍼의 첫 바이트에 신호값을 저장
-    ack_response[0] = signal;
+	// 1. 복사할 길이를 결정 (버퍼 오버플로우 방지)
+	uint8_t len_to_copy = length;
+	if (len_to_copy > ACK_PAYLOAD_SIZE)
+		len_to_copy = ACK_PAYLOAD_SIZE; // ACK 버퍼 크기보다 크면 잘라냄
+
+	// 2. 전달받은 payload 데이터를 내부 ack_response 버퍼로 복사
+	memcpy(ack_response, payload, len_to_copy);
 }
 
 // ★ 새 명령 유무는 RX_DR 비트로 판단 (플래그 제거)
