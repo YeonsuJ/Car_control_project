@@ -21,6 +21,7 @@
 #include "adc.h"
 #include "can.h"
 #include "i2c.h"
+#include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -28,7 +29,9 @@
 #include "can_handler.h"
 #include "battery_monitor.h"
 #include "oled_display.h"
-
+#include "string.h" // strlen() 함수를 사용하기 위해 string.h 헤더를 추가합니다.
+#include "stdio.h"
+#include "boot_logger.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -38,7 +41,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+// CAN 통신 타임아웃 시간 정의
+#define CAN_TIMEOUT_MS 250
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -49,7 +53,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+extern volatile uint32_t g_last_can_rx_time;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -95,26 +99,21 @@ int main(void)
   MX_CAN_Init();
   MX_I2C1_Init();
   MX_ADC1_Init();
+  MX_I2C2_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+
+  // 부팅 로거 초기화. 팩토리 리셋, 덤프, 부팅 시퀀스 처리
+  BootLogger_Init();
 
   // 1. Can 시작, 필터 설정 및 인터럽트 등록
   CANHandler_Init();
 
   // 2. OLED 초기화
   OLED_Init();
-  OLED_SetStatus("---");  // 초기 상태
-
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
-
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_12, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET);
+  g_last_can_rx_time = HAL_GetTick(); // 프로그램 시작 시 타임스탬프 초기화
 
   uint32_t last_update_time = 0;
-
-
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -125,6 +124,16 @@ int main(void)
   {
 	 uint32_t now = HAL_GetTick();
 
+	 // CAN 통신 불량 감지 로직 (watchdog timer 구현)
+	 // 현재 시간과 마지막 CAN 수신 시간의 차이가 TIMEOUT보다 크면
+	 if (now - g_last_can_rx_time > CAN_TIMEOUT_MS)
+		 // 통신 실패 시
+		 OLED_SetCANStatus(false);
+	 else
+		 // 통신 성공 시
+		 OLED_SetCANStatus(true);
+
+
 	 if (now - last_update_time >= 100) //100ms 주기
 	 {
 		 last_update_time = now;
@@ -132,10 +141,12 @@ int main(void)
 		 float vout = 0.0f;
 		 float percent = Read_Battery_Percentage(&vout);
 
-		 // 상태(status)는 Display_SetStatus()를 통해 can_handler에서 이미 갱신됨
-		 OLED_BatteryStatus(NULL, percent, vout);  // status는 NULL로 전달
+		 OLED_BatteryStatus(percent, vout);
 
 	 }
+
+	 // --- 주기적으로 현재 Uptime을 EEPROM에 저장 ---
+	 BootLogger_UpdateUptime();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -190,6 +201,7 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+
 
 /* USER CODE END 4 */
 

@@ -2,7 +2,7 @@
 #include "can.h"
 #include "oled_display.h"
 #include "led_control.h"
-
+#include <stdbool.h>
 // =============================
 // CAN 수신 패킷 구조
 // - 0x6A5 : [0] 거리 위험, [1] LDR 기반 어두움 여부
@@ -22,6 +22,9 @@ static uint8_t status_distance = 0;
 static uint8_t status_light = 0;
 static uint8_t status_direction = 0;
 static uint8_t status_brake = 0;
+
+// 마지막 CAN 수신 시간을 저장할 전역 변수
+volatile uint32_t g_last_can_rx_time = 0;
 
 void CANHandler_Init(void)
 {
@@ -61,24 +64,47 @@ void CAN_Filter_Config(CAN_HandleTypeDef *hcan_ptr)
 // CAN 수신 인터럽트 콜백 함수 (FIFO1)
 void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
+	// 메시지를 받았으므로 현재 시간을 기록
+	g_last_can_rx_time = HAL_GetTick();
+
+	// 각 상태를 나타내는 비트 마스크 정의
+	#define STATUS_FRONT_DETECT (1 << 0)
+	#define STATUS_REAR_DETECT  (1 << 1)
+
     HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO1, &RxHeader, RxData);
 
-    if (RxHeader.StdId == 0x6A5 && RxHeader.DLC == 2)
+    if (RxHeader.StdId == 0x6A5 && RxHeader.DLC >=1)
     {
         status_distance = RxData[0];
         status_light = RxData[1];
 
-        if (status_distance == 1)
-            OLED_SetStatus("DETECTED");
-        else if (status_distance == 0)
-            OLED_SetStatus("SAFE");
-        else
-            OLED_SetStatus("UNKNOWN");
+        // 비트 마스크를 사용하여 상태 확인
+		bool isFrontDetected = (status_distance & STATUS_FRONT_DETECT);
+		bool isRearDetected = (status_distance & STATUS_REAR_DETECT);
+
+		if (isFrontDetected && isRearDetected) // 둘 다 감지
+		{
+			OLED_SetObstacleStatus("BOTH");
+		}
+		else if (isFrontDetected) // 전방만 감지
+		{
+			OLED_SetObstacleStatus("FRONT");
+		}
+		else if (isRearDetected) // 후방만 감지
+		{
+			OLED_SetObstacleStatus("REAR");
+		}
+		else // 둘 다 미감지
+		{
+			OLED_SetObstacleStatus("NONE");
+		}
     }
-    else if (RxHeader.StdId == 0x321 && RxHeader.DLC == 2)
+    else if (RxHeader.StdId == 0x321 && RxHeader.DLC >=3)
     {
         status_direction = RxData[0];
         status_brake = RxData[1];
+        bool rf_ok = (bool)RxData[2];
+        OLED_SetRFStatus(rf_ok);
     }
 
     // LED 상태 업데이트 (독립 처리)
