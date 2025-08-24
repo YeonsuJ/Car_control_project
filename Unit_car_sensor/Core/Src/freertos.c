@@ -191,19 +191,28 @@ void StartCANTask(void *argument)
 
     /* Infinite loop */
     for(;;)
-    {
-        // 1. Queue에 데이터가 들어올 때까지 Block 상태로 대기
-        if (osMessageQueueGet(CANTxQueueHandle, &received_packet, NULL, osWaitForever) == osOK)
         {
-            // 2. 받은 패킷으로 CAN 전송 데이터(TxData) 가공 (수정된 로직)
-            TxData[0] = (received_packet.distance_front <= 10 || received_packet.distance_rear <= 10);
-            TxData[1] = (received_packet.light_condition == GPIO_PIN_SET);
-            TxData[2] = (uint8_t)received_packet.rpm;
+			// 1. Queue에 데이터가 들어올 때까지 Block 상태로 대기
+			if (osMessageQueueGet(CANTxQueueHandle, &received_packet, NULL, osWaitForever) == osOK)
+			{
+				// --- 2. 수정된 부분: RPM 값을 2바이트로 분리하여 CAN 데이터 가공 ---
 
-            // 3. CAN 메시지 전송
-            CAN_Send();
+				// 초음파 및 조도 센서 데이터는 기존과 동일
+				TxData[0] = (received_packet.distance_front <= 10 || received_packet.distance_rear <= 10);
+				TxData[1] = (received_packet.light_condition == GPIO_PIN_SET);
+
+				// RPM 값을 16비트 정수형으로 캐스팅
+				uint16_t rpm_value = (uint16_t)received_packet.rpm;
+
+				// RPM 값을 하위(LSB)와 상위(MSB) 바이트로 분리하여 저장
+				// 예: RPM이 300 (0x012C)일 경우
+				TxData[2] = (uint8_t)(rpm_value & 0x00FF); // 하위 바이트 (LSB): 0x2C
+				TxData[3] = (uint8_t)((rpm_value >> 8) & 0x00FF); // 상위 바이트 (MSB): 0x01
+
+				// 3. CAN 메시지 전송
+				CAN_Send();
+            }
         }
-    }
     /* USER CODE END StartCANTask */
 }
 

@@ -62,7 +62,7 @@ void Update_Motor_RPM(void)
     {
         // 1. 실제 경과 시간을 이용해 정확한 RPM 계산
         float pps = (float)delta_encoder / delta_time_s; // Pulses Per Second
-        float raw_rpm = fabsf((pps / TICKS_PER_REV) * 60.0f);
+        float raw_rpm = (pps / TICKS_PER_REV) * 60.0f;
 
         // 2. 저주파 통과 필터(IIR) 적용하여 값을 부드럽게 만듦
         filtered_rpm = (RPM_FILTER_ALPHA * raw_rpm) + ((1.0f - RPM_FILTER_ALPHA) * filtered_rpm);
@@ -72,5 +72,6 @@ void Update_Motor_RPM(void)
 
 float MotorControl_GetRPM(void)
 {
-    return motor_rpm;
+	// 외부로 값을 반환할 때만 fabsf()를 사용해 항상 양수로 만듭니다.
+	return fabsf(motor_rpm);
 }
