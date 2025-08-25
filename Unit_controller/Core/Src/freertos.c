@@ -26,12 +26,12 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <string.h>
-#include "comm_handler.h"  // CommStatus_t, PAYLOAD_SIZE 등 사용
-#include "input_handler.h" // InputHandler_... 함수들 사용
-#include "mpu6050.h"
-
-extern I2C_HandleTypeDef hi2c2;
-extern MPU6050_t MPU6050;
+#include <stdio.h>
+#include "comm_handler.h"
+#include "input_handler.h"
+#include "ssd1306.h"
+#include "fonts.h"
+#include "app_logic.h" // Use the new application logic header
 
 /* USER CODE END Includes */
 
@@ -42,9 +42,7 @@ extern MPU6050_t MPU6050;
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-static float App_GetRollAngle(void);
-static void App_BuildPacket(uint8_t* packet_buffer, float roll_angle);
-static void App_HandleAckPayload(uint8_t* ack_payload);
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -55,6 +53,11 @@ static void App_HandleAckPayload(uint8_t* ack_payload);
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
 
+// Mutex for display data is defined here as it's an RTOS object
+   osMutexId_t g_displayDataMutexHandle;
+   const osMutexAttr_t g_displayDataMutex_attributes = {
+     .name = "displayDataMutex"
+   };
 /* USER CODE END Variables */
 /* Definitions for commTask */
 osThreadId_t commTaskHandle;
@@ -67,7 +70,7 @@ const osThreadAttr_t commTask_attributes = {
 osThreadId_t sensorTaskHandle;
 const osThreadAttr_t sensorTask_attributes = {
   .name = "sensorTask",
-  .stack_size = 256 * 4,
+  .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityHigh,
 };
 /* Definitions for ackHandlerTask */
@@ -75,6 +78,13 @@ osThreadId_t ackHandlerTaskHandle;
 const osThreadAttr_t ackHandlerTask_attributes = {
   .name = "ackHandlerTask",
   .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+/* Definitions for DisplayTask */
+osThreadId_t DisplayTaskHandle;
+const osThreadAttr_t DisplayTask_attributes = {
+  .name = "DisplayTask",
+  .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for sensorQueue */
@@ -96,6 +106,7 @@ const osSemaphoreAttr_t ackSem_attributes = {
 void StartcommTask(void *argument);
 void StartsensorTask(void *argument);
 void StartackHandlerTask(void *argument);
+void StartDisplayTask(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -111,11 +122,12 @@ void MX_FREERTOS_Init(void) {
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
+  g_displayDataMutexHandle = osMutexNew(&g_displayDataMutex_attributes);
   /* USER CODE END RTOS_MUTEX */
 
   /* Create the semaphores(s) */
   /* creation of ackSem */
-  ackSemHandle = osSemaphoreNew(1, 1, &ackSem_attributes);
+  ackSemHandle = osSemaphoreNew(1, 0, &ackSem_attributes);
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
@@ -143,6 +155,9 @@ void MX_FREERTOS_Init(void) {
   /* creation of ackHandlerTask */
   ackHandlerTaskHandle = osThreadNew(StartackHandlerTask, NULL, &ackHandlerTask_attributes);
 
+  /* creation of DisplayTask */
+  DisplayTaskHandle = osThreadNew(StartDisplayTask, NULL, &DisplayTask_attributes);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
@@ -164,7 +179,7 @@ void StartcommTask(void *argument)
 {
   /* USER CODE BEGIN StartcommTask */
 	  uint8_t tx_packet[PAYLOAD_SIZE] = {0};
-	  float roll = 0.0f; // roll 값을 저장할 지역 변수
+	  float roll = 0.0f;
 
   /* Infinite loop */
   for(;;)
@@ -191,13 +206,11 @@ void StartsensorTask(void *argument)
   {
 	    // 1. 센서 값을 읽어옵니다.
 	    float roll = App_GetRollAngle();
-
 	    // 2. 읽어온 값을 메시지 큐에 넣습니다.
 	    osMessageQueuePut(sensorQueueHandle, &roll, 0U, 0U);
 
-	    // 3. 5ms 주기로 실행합니다.
-	    osDelay(5);
-
+	    // 3. 다음 센서 측정까지 대기
+	    osDelay(SENSOR_TASK_PERIOD_MS);
   }
   /* USER CODE END StartsensorTask */
 }
@@ -214,72 +227,113 @@ void StartackHandlerTask(void *argument)
   /* USER CODE BEGIN StartackHandlerTask */
 	  uint8_t ack_packet[ACK_PAYLOAD_SIZE] = {0};
 
-  /* Infinite loop */
-  for(;;)
-  {
-	  // 1. 세마포어 신호가 올 때까지 무한정 대기 (휴면 상태, CPU 점유율 0)
-	  osSemaphoreAcquire(ackSemHandle, osWaitForever);
+	  /* Infinite loop */
+	  for(;;)
+	  {
+		  osSemaphoreAcquire(ackSemHandle, osWaitForever);
+		  CommStatus_t status = CommHandler_CheckStatus(ack_packet, ACK_PAYLOAD_SIZE);
 
-	    // 2. 신호가 와서 깨어나면, ACK 처리 로직을 수행
-	    CommStatus_t status = CommHandler_CheckStatus(ack_packet, ACK_PAYLOAD_SIZE);
-	    if (status == COMM_TX_SUCCESS)
-	    {
-	        App_HandleAckPayload(ack_packet);
-	    }
-	    else if (status == COMM_TX_FAIL)
-	    {
-	        // TODO: 통신 실패 시 처리 로직
-	    }
+		  if (status == COMM_TX_SUCCESS)
+		  {
+			  // Process the received data
+			  App_HandleAckPayload(ack_packet);
+
+			  // Update comm status to OK
+			  if (osMutexAcquire(g_displayDataMutexHandle, 10) == osOK)
+			  {
+				  g_displayData.comm_ok = 1;
+				  osMutexRelease(g_displayDataMutexHandle);
+			  }
+		  }
+		  else if (status == COMM_TX_FAIL)
+		  {
+			  // Update comm status to FAIL
+			  if (osMutexAcquire(g_displayDataMutexHandle, 10) == osOK)
+			  {
+				  g_displayData.comm_ok = 0;
+				  osMutexRelease(g_displayDataMutexHandle);
+			  }
+		  }
 	  }
   /* USER CODE END StartackHandlerTask */
+}
+
+/* USER CODE BEGIN Header_StartDisplayTask */
+/**
+* @brief Function implementing the DisplayTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartDisplayTask */
+void StartDisplayTask(void *argument)
+{
+  /* USER CODE BEGIN StartDisplayTask */
+   DisplayData_t localDisplayData = {0};
+   char speed_str[16];
+   char dir_str[10];
+   int speed_percentage;
+
+   // Set initial communication status to OK
+   if (osMutexAcquire(g_displayDataMutexHandle, osWaitForever) == osOK)
+   {
+	   g_displayData.comm_ok = 1;
+	   osMutexRelease(g_displayDataMutexHandle);
+   }
+
+   /* Infinite loop */
+   for(;;)
+   {
+	 // 1. Copy shared data under mutex protection
+	 if (osMutexAcquire(g_displayDataMutexHandle, osWaitForever) == osOK)
+	 {
+		 localDisplayData = g_displayData;
+		 osMutexRelease(g_displayDataMutexHandle);
+	 }
+
+	 SSD1306_Fill(SSD1306_COLOR_BLACK);
+
+	 // 2. Check comm status and render display accordingly
+	 if (localDisplayData.comm_ok)
+	 {
+		 // --- Normal Display ---
+		 speed_percentage = (int)(((float)localDisplayData.rpm / MAX_RPM) * 100.0f);
+		 if (speed_percentage > 100) { speed_percentage = 100; }
+		 sprintf(speed_str, "%d %%", speed_percentage);
+
+		 switch(localDisplayData.direction)
+		 {
+			 case 0: strcpy(dir_str, "   R"); break;
+			 case 1: strcpy(dir_str, "   D"); break;
+			 default: strcpy(dir_str, ""); break;
+		 }
+
+		 if (localDisplayData.direction == 1) { SSD1306_GotoXY(26, 0); }
+		 else if (localDisplayData.direction == 0) { SSD1306_GotoXY(20, 0); }
+		 SSD1306_Puts(dir_str, &Font_11x18, 1);
+
+		 SSD1306_GotoXY(39, 20);
+		 SSD1306_Puts("SPEED", &Font_11x18, 1);
+
+		 uint8_t len = strlen(speed_str);
+		 uint8_t x_pos = (128 - (len * 7)) / 2;
+		 SSD1306_GotoXY(x_pos, 40);
+		 SSD1306_Puts(speed_str, &Font_11x18, 1);
+	 }
+	 else
+	 {
+		 // --- Communication Failure Display ---
+		 SSD1306_GotoXY(5, 25);
+		 SSD1306_Puts("NO SIGNAL", &Font_11x18, 1);
+	 }
+
+	 SSD1306_UpdateScreen();
+
+	 osDelay(DISPLAY_TASK_PERIOD_MS);
+   }
+  /* USER CODE END StartDisplayTask */
 }
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
 
-// ★★★ main 루프의 상세 로직을 담당하는 내부 헬퍼 함수들 ★★★
-
-/**
-  * @brief  MPU6050 센서로부터 Roll 각도를 읽어옵니다.
-  */
-static float App_GetRollAngle(void)
-{
-    MPU6050_Read_All(&hi2c2, &MPU6050);
-    return MPU6050.KalmanAngleX;
-}
-
-/**
-  * @brief  각 모듈에서 데이터를 가져와 전송 패킷을 구성합니다.
-  */
-static void App_BuildPacket(uint8_t* packet_buffer, float roll_angle)
-{
-    memset(packet_buffer, 0, PAYLOAD_SIZE);
-
-    packet_buffer[0] = 1; // ID
-
-    // Roll 값 인코딩
-    int16_t roll_encoded = (int16_t)(roll_angle * 100.0f);
-    memcpy(&packet_buffer[1], &roll_encoded, sizeof(int16_t));
-
-    // 버튼 입력 시간 가져오기
-    uint16_t accel_ms = InputHandler_GetAccelMillis();
-    uint16_t brake_ms = InputHandler_GetBrakeMillis();
-    memcpy(&packet_buffer[3], &accel_ms, sizeof(uint16_t));
-    memcpy(&packet_buffer[5], &brake_ms, sizeof(uint16_t));
-
-    // 방향 정보 가져오기
-    packet_buffer[7] = InputHandler_GetDirection();
-}
-
-/**
-  * @brief  수신된 ACK 페이로드를 처리합니다.
-  */
-static void App_HandleAckPayload(uint8_t* ack_payload)
-{
-    if (ack_payload[0] == 1)
-        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
-    else
-        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
-}
 /* USER CODE END Application */
-

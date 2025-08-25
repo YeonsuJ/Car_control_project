@@ -30,19 +30,16 @@
 #include "mpu6050.h"
 #include "input_handler.h"
 #include "comm_handler.h"
-
+#include "ssd1306.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 
-MPU6050_t MPU6050;
-
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-float roll;
 
 /* USER CODE END PD */
 
@@ -99,12 +96,17 @@ int main(void)
   MX_I2C2_Init();
   MX_TIM2_Init();
   MX_SPI1_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
   InputHandler_Init();
   CommHandler_Init();
 
   if (MPU6050_Init(&hi2c2) != 0) {
       Error_Handler();
+  }
+
+  if (SSD1306_Init() != 1) {
+	  Error_Handler();
   }
 
   HAL_TIM_Base_Start_IT(&htim2);
@@ -183,7 +185,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
     if (GPIO_Pin == GPIO_PIN_3)
     {
-        // CommHandler_IrqCallback(); // 기존 호출 대신
         osSemaphoreRelease(ackSemHandle); // 세마포어를 해제하여 ackHandlerTask를 깨움
         return;
     }

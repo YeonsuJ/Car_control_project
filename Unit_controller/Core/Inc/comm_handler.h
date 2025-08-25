@@ -6,7 +6,7 @@
 #include "main.h"
 
 // ACK 페이로드 크기 정의
-#define ACK_PAYLOAD_SIZE 2
+#define ACK_PAYLOAD_SIZE 3
 #define PAYLOAD_SIZE 8
 
 // 송신 결과 상태를 나타내는 열거형

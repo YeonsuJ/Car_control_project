@@ -90,11 +90,7 @@ LockerDirection InputHandler_GetDirection(void)
 {
     // 락커 스위치 판별 (PB9: FORWARD)
     if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_9) == GPIO_PIN_RESET)
-    {
         return LOCKER_FORWARD;
-    }
     else
-    {
         return LOCKER_BACKWARD;
-    }
 }

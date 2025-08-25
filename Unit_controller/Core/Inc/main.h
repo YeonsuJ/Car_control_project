@@ -76,6 +76,10 @@ void Error_Handler(void);
 #define IRQ_Pin GPIO_PIN_3
 #define IRQ_GPIO_Port GPIOB
 #define IRQ_EXTI_IRQn EXTI3_IRQn
+#define OLED_SCK_Pin GPIO_PIN_6
+#define OLED_SCK_GPIO_Port GPIOB
+#define OLED_SDA_Pin GPIO_PIN_7
+#define OLED_SDA_GPIO_Port GPIOB
 #define Motor_Backward_Pin GPIO_PIN_8
 #define Motor_Backward_GPIO_Port GPIOB
 #define Motor_Foward_Pin GPIO_PIN_9
