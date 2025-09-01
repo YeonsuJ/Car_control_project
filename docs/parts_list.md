@@ -18,7 +18,7 @@
 | 품목 | 용도 | 수량 | 이미지 |
 | :------: | :------: |:------: |:------: |
 |[NRF24L01+PA+LNA] 2.4G 무선 모듈|car-controller RF 통신|2|<img src="../media/part_list%20images/nrf24l01+pa+lna(rf_module).jpg" alt="부품 이미지" width="120" />|
-|[MCP2551] CAN 트랜시버 모듈| car - can 통신 |3|<img src="../media/part_list%20images/[MCP2551]can_transceiver.png" alt="부품 이미지" width="120" />|
+|[MCP2551] CAN 트랜시버 모듈| car - can 통신 |3|<img src="../media/part_list%20images/(MCP2551)can_transceiver.png" alt="부품 이미지" width="120" />|
 <br/>
 
 
