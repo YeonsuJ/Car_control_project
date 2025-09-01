@@ -97,7 +97,8 @@ int main(void)
   MX_TIM4_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
-  DWT_Init(); // <<-- 추가: DWT 정밀 타이머 초기화
+  // RPM 계산에 사용할 정밀 타이머(DWT)를 초기화한다.
+  DWT_Init(); 
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -115,7 +116,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

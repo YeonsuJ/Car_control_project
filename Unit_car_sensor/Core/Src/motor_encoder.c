@@ -1,30 +1,30 @@
-/*
- * motor_encoder.c
- *
- * Created on: Aug 15, 2025
- * Author: itnc
+/**
+ * @file motor_encoder.c
+ * @brief DC 모터 엔코더를 이용한 RPM 측정 소스 파일이다.
+ * @author YeonsuJ
+ * @date 2025-07-25
  */
+
 #include <math.h>
 #include "motor_encoder.h"
 #include "tim.h"
 
 // --- 상수 정의 ---
-#define PPR 8
-#define GEAR_RATIO 21.3f
-#define TICKS_PER_REV (PPR * GEAR_RATIO * 4)
-// 저주파 통과 필터 계수 (0.0 ~ 1.0 사이, 값이 클수록 반응이 빠르고 작을수록 부드러워짐)
-#define RPM_FILTER_ALPHA 0.3f
+#define PPR 8                    // 모터 엔코더의 한 회전당 펄스 수 (Pulse Per Revolution)
+#define GEAR_RATIO 21.3f         // 감속 기어비
+#define TICKS_PER_REV (PPR * GEAR_RATIO * 4) // 한 바퀴 회전당 발생하는 총 틱 수 (4배수 모드 사용)
+#define RPM_FILTER_ALPHA 0.3f    // 저주파 통과 필터 계수 (0.0 ~ 1.0). 값이 클수록 반응이 빠르다.
 
 // --- 타이머 핸들 ---
-extern TIM_HandleTypeDef htim1; // DC 모터 엔코더 타이머
+extern TIM_HandleTypeDef htim1; // DC 모터 엔코더 입력을 위한 타이머 핸들
 
 // --- static 변수 ---
-static float motor_rpm = 0.0f;
-static float filtered_rpm = 0.0f;
+static float motor_rpm = 0.0f;     // 필터링된 최종 RPM 값을 저장하는 변수
+static float filtered_rpm = 0.0f;  // 저주파 통과 필터의 내부 계산을 위한 변수
 
 /**
- * @brief DWT Cycle Counter를 활성화하여 초정밀 타이머로 사용
- * @note  이 함수는 HAL_Init() 이후, RTOS 스케줄러 시작 전에 한 번만 호출하면 됩니다.
+ * @brief DWT Cycle Counter를 활성화하여 초정밀 타이머로 사용한다.
+ * @note 이 함수는 HAL_Init() 이후, RTOS 스케줄러 시작 전에 한 번만 호출해야 한다.
  */
 void DWT_Init(void)
 {
@@ -37,12 +37,13 @@ void DWT_Init(void)
 }
 
 /**
- * @brief 개선된 RPM 계산 함수
+ * @brief 주기적으로 호출되어 엔코더 카운트 변화량과 경과 시간을 바탕으로 RPM을 계산한다.
+ * @note 저주파 통과 필터(IIR)를 적용하여 RPM 값을 부드럽게 처리한다.
  */
 void Update_Motor_RPM(void)
 {
-    static int16_t last_encoder_count = 0;
-    static uint32_t last_cycle_count = 0;
+    static int16_t last_encoder_count = 0;   // 이전 엔코더 카운터 값
+    static uint32_t last_cycle_count = 0;    // 이전 DWT 사이클 카운트 값
 
     uint32_t current_cycle_count = DWT->CYCCNT;
     int16_t current_encoder_count = (int16_t)__HAL_TIM_GET_COUNTER(&htim1);
@@ -70,8 +71,12 @@ void Update_Motor_RPM(void)
     }
 }
 
+/**
+ * @brief 현재 계산된 모터의 RPM 값을 반환한다.
+ * @retval float 필터링된 현재 RPM 값 (항상 양수)
+ * @note fabsf() 함수를 사용하여 모터의 회전 방향과 관계없이 항상 양수 값을 반환한다.
+ */
 float MotorControl_GetRPM(void)
 {
-	// 외부로 값을 반환할 때만 fabsf()를 사용해 항상 양수로 만듭니다.
 	return fabsf(motor_rpm);
 }

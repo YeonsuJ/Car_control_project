@@ -55,7 +55,7 @@ osThreadId_t SensorTaskHandle;
 const osThreadAttr_t SensorTask_attributes = {
   .name = "SensorTask",
   .stack_size = 256 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+  .priority = (osPriority_t) osPriorityHigh,
 };
 /* Definitions for CANTask */
 osThreadId_t CANTaskHandle;
@@ -129,17 +129,16 @@ void MX_FREERTOS_Init(void) {
 
 /* USER CODE BEGIN Header_StartSensorTask */
 /**
-  * @brief  Function implementing the SensorTask thread.
-  * @param  argument: Not used
-  * @retval None
+  * @brief SensorTask는 주기적으로 각종 센서 데이터를 수집하여 CANTask로 전달하는 역할을 한다.
+  * @note 10ms 주기로 동작하며, 초음파 센서, 엔코더(RPM), 조도 센서 값을 읽어와 큐(Queue)를 통해 전송한다.
   */
 /* USER CODE END Header_StartSensorTask */
 void StartSensorTask(void *argument)
 {
   /* USER CODE BEGIN StartSensorTask */
 	// --- SensorTask 초기화 ---
-	Ultrasonic_Init();
-	HAL_TIM_Encoder_Start(&htim1, TIM_CHANNEL_ALL);
+	Ultrasonic_Init(); // 초음파 센서 관련 타이머(TIM2, TIM4)를 초기화하고 시작한다.
+	HAL_TIM_Encoder_Start(&htim1, TIM_CHANNEL_ALL); // 엔코더 입력을 위한 타이머(TIM1)를 시작한다.
 
 	// osDelayUntil을 사용하기 위한 변수
 	uint32_t last_wake_time = osKernelGetTickCount();
@@ -147,28 +146,28 @@ void StartSensorTask(void *argument)
   /* Infinite loop */
 	for(;;)
 	  {
-	    // <<-- 2. 수정된 부분: osDelayUntil 사용법 (CMSIS-RTOS V2) -->>
-	    // 다음 깨어날 시간을 계산한 후, 그 시간까지 Task를 지연시킵니다.
+	    // 정확한 주기를 유지하기 위해 osDelayUntil을 사용한다.
+	    // 다음 깨어날 시간을 계산한 후, 그 시간까지 Task를 지연시킨다.
 	    last_wake_time += period_ms;
 	    osDelayUntil(last_wake_time);
 
 	    // 센서 데이터 수집
-	    Update_Motor_RPM();
-	    Ultrasonic_Trigger();
+	    Update_Motor_RPM();   // 엔코더 값을 읽어 RPM을 계산한다.
+	    Ultrasonic_Trigger(); // 초음파 센서 거리 측정을 시작한다.
 
-	    SensorData_t sensor_packet; // 전송할 데이터 패킷
+	    SensorData_t sensor_packet; // CANTask로 전송할 데이터 패킷 구조체
 
 	    // 데이터 패킷 채우기
-	    sensor_packet.light_condition = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_3);
-	    sensor_packet.rpm = MotorControl_GetRPM();
+	    sensor_packet.light_condition = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_3); // 조도 센서 값(GPIO)을 읽는다.
+	    sensor_packet.rpm = MotorControl_GetRPM(); // 계산된 RPM 값을 가져온다.
 
-	    // ISR과 공유하는 변수 보호 (Critical Section)
+	    // ISR(ultrasonic.c의 콜백 함수)에서 변경되는 전역 변수에 안전하게 접근하기 위해 Critical Section으로 보호한다.
 	    taskENTER_CRITICAL();
-	    sensor_packet.distance_front = distance_front;
-	    sensor_packet.distance_rear = distance_rear;
+	    sensor_packet.distance_front = distance_front; // 전방 거리 값을 복사한다.
+	    sensor_packet.distance_rear = distance_rear;   // 후방 거리 값을 복사한다.
 	    taskEXIT_CRITICAL();
 
-	    // 패킷을 Queue로 전송
+	    // 채워진 데이터 패킷을 큐(CANTxQueueHandle)로 전송한다.
 	    osMessageQueuePut(CANTxQueueHandle, &sensor_packet, 0, 0);
 	  }
   /* USER CODE END StartSensorTask */
@@ -176,44 +175,53 @@ void StartSensorTask(void *argument)
 
 /* USER CODE BEGIN Header_StartCANTask */
 /**
-* @brief Function implementing the CANTask thread.
-* @param argument: Not used
-* @retval None
+* @brief CANTask는 SensorTask로부터 큐를 통해 데이터를 수신하고, 이를 가공하여 CAN 버스로 전송하는 역할을 한다.
+* @note 큐에 데이터가 들어올 때까지 대기(Block)하며, 수신된 데이터를 CAN 프로토콜에 맞는 형식으로 변환하여 송신한다.
 */
 /* USER CODE END Header_StartCANTask */
 void StartCANTask(void *argument)
 {
-    /* USER CODE BEGIN StartCANTask */
-    // --- CANTask 초기화 ---
-    CAN_tx_Init();
+  /* USER CODE BEGIN StartCANTask */
 
-    SensorData_t received_packet; // Queue에서 받을 데이터 패킷
+    CAN_tx_Init(); // CAN 통신 및 Tx 메시지 헤더를 초기화한다.
+
+    SensorData_t received_packet; // SensorTask로부터 받을 데이터 패킷 구조체
 
     /* Infinite loop */
     for(;;)
-        {
-			// 1. Queue에 데이터가 들어올 때까지 Block 상태로 대기
+    {
+			// 큐(CANTxQueue)에 데이터가 들어올 때까지 무한정 대기한다.
 			if (osMessageQueueGet(CANTxQueueHandle, &received_packet, NULL, osWaitForever) == osOK)
 			{
-				// --- 2. 수정된 부분: RPM 값을 2바이트로 분리하여 CAN 데이터 가공 ---
+        // --- 수신된 데이터를 CAN 전송 형식에 맞게 가공 ---
 
-				// 초음파 및 조도 센서 데이터는 기존과 동일
-				TxData[0] = (received_packet.distance_front <= 10 || received_packet.distance_rear <= 10);
+				// 1. 장애물 상태 데이터를 1바이트 비트마스크로 가공한다.
+				uint8_t obstacle_status = 0; // 0으로 초기화 (장애물 없음)
+
+				if (received_packet.distance_front <= 10) // 전방 10cm 이내에 장애물 감지 시
+				{
+					obstacle_status |= (1 << 0); // 0번 비트를 1로 세팅한다. (값: 1)
+				}
+				if (received_packet.distance_rear <= 10) // 후방 10cm 이내에 장애물 감지 시
+				{
+					obstacle_status |= (1 << 1); // 1번 비트를 1로 세팅한다. (값: 2)
+				}
+				TxData[0] = obstacle_status; // 최종 계산된 값을 TxData[0]에 할당한다.
+
+				// 2. 조도 센서 상태를 1바이트로 가공한다 (SET이면 1, RESET이면 0)
 				TxData[1] = (received_packet.light_condition == GPIO_PIN_SET);
 
-				// RPM 값을 16비트 정수형으로 캐스팅
+				// 3. float 타입의 RPM 값을 2바이트 정수형으로 변환하여 저장한다.
 				uint16_t rpm_value = (uint16_t)received_packet.rpm;
+				// 하위 8비트(LSB)와 상위 8비트(MSB)로 분리한다.
+				TxData[2] = (uint8_t)(rpm_value & 0x00FF);      // LSB
+				TxData[3] = (uint8_t)((rpm_value >> 8) & 0x00FF); // MSB
 
-				// RPM 값을 하위(LSB)와 상위(MSB) 바이트로 분리하여 저장
-				// 예: RPM이 300 (0x012C)일 경우
-				TxData[2] = (uint8_t)(rpm_value & 0x00FF); // 하위 바이트 (LSB): 0x2C
-				TxData[3] = (uint8_t)((rpm_value >> 8) & 0x00FF); // 상위 바이트 (MSB): 0x01
-
-				// 3. CAN 메시지 전송
+				// 가공된 데이터가 담긴 TxData 배열을 CAN 버스로 전송한다.
 				CAN_Send();
-            }
-        }
-    /* USER CODE END StartCANTask */
+      }
+    }
+  /* USER CODE END StartCANTask */
 }
 
 /* Private application code --------------------------------------------------*/

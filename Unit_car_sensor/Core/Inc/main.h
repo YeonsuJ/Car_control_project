@@ -77,12 +77,7 @@ void Error_Handler(void);
 #define Rear_Echo_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
-typedef struct {
-    uint32_t distance_front;
-    uint32_t distance_rear;
-    uint8_t  light_condition;
-    float    rpm;
-} SensorData_t;
+
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
