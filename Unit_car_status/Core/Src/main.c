@@ -18,10 +18,10 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "cmsis_os.h"
 #include "adc.h"
 #include "can.h"
 #include "i2c.h"
-#include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -31,7 +31,6 @@
 #include "oled_display.h"
 #include "string.h" // strlen() 함수를 사용하기 위해 string.h 헤더를 추가합니다.
 #include "stdio.h"
-#include "boot_logger.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -41,7 +40,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-// CAN 통신 타임아웃 시간 정의
 #define CAN_TIMEOUT_MS 250
 /* USER CODE END PD */
 
@@ -53,11 +51,17 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-extern volatile uint32_t g_last_can_rx_time;
+
+// Central 보드로부터 마지막 CAN 메시지를 수신한 시간을 저장한다 (타임아웃 감지용)
+volatile uint32_t g_last_rx_time_central = 0;
+// Sensor 보드로부터 마지막 CAN 메시지를 수신한 시간을 저장한다 (타임아웃 감지용)
+volatile uint32_t g_last_rx_time_sensor = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+void MX_FREERTOS_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -99,58 +103,38 @@ int main(void)
   MX_CAN_Init();
   MX_I2C1_Init();
   MX_ADC1_Init();
-  MX_I2C2_Init();
-  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  // 부팅 로거 초기화. 팩토리 리셋, 덤프, 부팅 시퀀스 처리
-  BootLogger_Init();
-
-  // 1. Can 시작, 필터 설정 및 인터럽트 등록
-  CANHandler_Init();
-
-  // 2. OLED 초기화
+  // 주변장치 드라이버 및 관련 변수를 초기화한다.
   OLED_Init();
-  g_last_can_rx_time = HAL_GetTick(); // 프로그램 시작 시 타임스탬프 초기화
-
-  uint32_t last_update_time = 0;
+  
+  // 프로그램 시작 시 타임스탬프를 현재 시간으로 초기화하여,
+  // 첫 메시지 수신 전까지 타임아웃이 발생하는 것을 방지한다.
+  g_last_rx_time_central = HAL_GetTick();
+  g_last_rx_time_sensor = HAL_GetTick();
   /* USER CODE END 2 */
+
+  /* Init scheduler */
+  osKernelInitialize();
+
+  /* Call init function for freertos objects (in cmsis_os2.c) */
+  MX_FREERTOS_Init();
+
+  /* Start scheduler */
+  osKernelStart();
+
+  /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-
   while (1)
   {
-	 uint32_t now = HAL_GetTick();
 
-	 // CAN 통신 불량 감지 로직 (watchdog timer 구현)
-	 // 현재 시간과 마지막 CAN 수신 시간의 차이가 TIMEOUT보다 크면
-	 if (now - g_last_can_rx_time > CAN_TIMEOUT_MS)
-		 // 통신 실패 시
-		 OLED_SetCANStatus(false);
-	 else
-		 // 통신 성공 시
-		 OLED_SetCANStatus(true);
-
-
-	 if (now - last_update_time >= 100) //100ms 주기
-	 {
-		 last_update_time = now;
-
-		 float vout = 0.0f;
-		 float percent = Read_Battery_Percentage(&vout);
-
-		 OLED_BatteryStatus(percent, vout);
-
-	 }
-
-	 // --- 주기적으로 현재 Uptime을 EEPROM에 저장 ---
-	 BootLogger_UpdateUptime();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  }
+ }
   /* USER CODE END 3 */
 }
 
@@ -202,8 +186,29 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 
-
 /* USER CODE END 4 */
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM3 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM3)
+  {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.

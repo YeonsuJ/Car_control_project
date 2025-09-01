@@ -36,6 +36,12 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
+// CAN 통신 상태를 나타내기 위한 열거형
+typedef enum {
+    CAN_STATUS_OK,
+    CAN_STATUS_HW_ERROR,
+    CAN_STATUS_TIMEOUT
+} CanStatus_t;
 
 /* USER CODE END ET */
 
@@ -57,14 +63,6 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define USB_USART_TX_Pin GPIO_PIN_2
-#define USB_USART_TX_GPIO_Port GPIOA
-#define USB_USART_RX_Pin GPIO_PIN_3
-#define USB_USART_RX_GPIO_Port GPIOA
-#define EEPROM_SCL_Pin GPIO_PIN_10
-#define EEPROM_SCL_GPIO_Port GPIOB
-#define EEPROM_SDA_Pin GPIO_PIN_11
-#define EEPROM_SDA_GPIO_Port GPIOB
 #define Brake_Left_LED_Pin GPIO_PIN_15
 #define Brake_Left_LED_GPIO_Port GPIOB
 #define Brake_Right_LED_Pin GPIO_PIN_8
