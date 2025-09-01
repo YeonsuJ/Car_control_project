@@ -103,13 +103,13 @@ int main(void)
   MX_CAN_Init();
   /* USER CODE BEGIN 2 */
 
-  // 1. Can 시작, 필터 설정 및 인터럽트 등록 핸들러 초기화
+  // 1. CAN 핸들러 초기화 (CAN 시작, 필터 설정, 인터럽트 활성화)
   CANHandler_Init();
 
-  // 2. RF 핸들러 초기화
+  // 2. RF 핸들러 초기화 (NRF24 모듈 Rx 모드 설정)
   RFHandler_Init();
 
-  // 3. 모터 제어기 초기화 (PWM, 엔코더 시작)
+  // 3. 모터 제어기 초기화 (PWM 타이머 시작, 초기 방향 설정)
   MotorControl_Init();
 
   /* USER CODE END 2 */
@@ -129,20 +129,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
     while (1)
     {
-//      if (RFHandler_GetNewCommand(&cmd))
-//      {
-//    	  // 새 명령 수신 시 모터/서보 제어 및 RPM 업데이트 동시 수행
-//    	  MotorControl_Update(&cmd);
-//
-//    	  // 전진/후진 + 브레이크 상태를 CAN으로 전송
-//		  uint8_t dir = cmd.direction;
-//		  uint8_t brake = (cmd.brake_ms > 0) ? 1 : 0;
-//		  CAN_Send_DriveStatus(dir, brake);
-//      }
-//
-//      // CAN 신호를 받아 다음 ACK 페이로드에 실릴 데이터를 설정
-//      RFHandler_SetAckPayload(can_distance_signal);
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -190,11 +176,17 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+/**
+ * @brief GPIO 외부 인터럽트 콜백 함수
+ * @param GPIO_Pin 인터럽트를 발생시킨 핀 번호
+ * @note NRF24 모듈의 IRQ 핀(GPIO_PIN_3)에서 인터럽트가 발생하면,
+ * 실제 처리를 `RFHandler_IrqCallback()` 함수에 위임한다.
+ */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-    if (GPIO_Pin == GPIO_PIN_3)  // IRQ 핀
+    if (GPIO_Pin == GPIO_PIN_3)  // NRF24의 IRQ 핀
     {
-        RFHandler_IrqCallback(); // 핸들러에게 위임
+        RFHandler_IrqCallback(); // RF 핸들러의 콜백 함수 호출
     }
 }
 /* USER CODE END 4 */

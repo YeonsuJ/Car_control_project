@@ -146,10 +146,16 @@ void MX_FREERTOS_Init(void) {
 
 /* USER CODE BEGIN Header_StartRFTask */
 /**
-  * @brief  Function implementing the RFTask thread.
-  * @param  argument: Not used
-  * @retval None
-  */
+* @brief RF 통신 수신 및 주행 제어를 총괄하는 최상위 태스크
+* @param argument: None
+* @note 이 태스크는 다음과 같은 순서로 동작한다:
+* 1. RF 수신 인터럽트(세마포어)를 타임아웃과 함께 대기한다.
+* 2. 수신 성공 시, CANTask로부터 받은 최신 CAN 데이터(거리, RPM)가 있는지 확인하고, 있다면 ACK 페이로드에 반영할 준비를 한다.
+* 3. RF 수신 버퍼의 모든 주행 명령을 `RFHandler_GetNewCommand`를 통해 처리한다.
+* 4. 각 명령에 대해 모터를 제어(`MotorControl_Update`)하고, 해당 명령을 CANTask로 전달(`osMessageQueuePut`)한다.
+* 5. 다음 전송을 위해 준비된 ACK 페이로드를 설정(`RFHandler_SetAckPayload`)한다.
+* 6. 만약 RF 수신이 타임아웃되면, RF 통신이 끊어진 것으로 간주하고 RF 실패 상태를 CANTask로 전송한다.
+*/
 /* USER CODE END Header_StartRFTask */
 void StartRFTask(void *argument)
 {
@@ -165,10 +171,10 @@ void StartRFTask(void *argument)
   /* Infinite loop */
 	for(;;)
 	  {
-	      // 1. RF 수신 인터럽트를 타임아웃과 함께 대기
+	      // RF 수신 인터럽트를 타임아웃과 함께 대기
 		if (osSemaphoreAcquire(RFSemHandle, RF_SEMAPHORE_TIMEOUT) == osOK)
 		{
-	      // 2. CAN 수신 큐에서 최신 거리 값을 논블로킹으로 확인
+	      // CAN 수신 큐에서 최신 거리 값을 논블로킹으로 확인
 		  // 성공적으로 새 데이터를 받으면 ack_payload를 업데이트
 		  if (osMessageQueueGet(CANRxQueueHandle, &received_can_packet, NULL, 0U) == osOK)
 		  {
@@ -180,24 +186,24 @@ void StartRFTask(void *argument)
 			  // memcpy를 사용하여 RPM 값을 페이로드에 저장
 			  uint16_t rpm_value = received_can_packet.motor_rpm;
 			  // rpm_value 변수의 메모리 내용을 ack_payload[1] 주소에 2바이트(sizeof(uint16_t))만큼 복사합니다.
-			  // 이 방식은 시스템의 Endianness(리틀/빅 엔디안)에 따라 자동으로 바이트 순서가 결정됩니다.
+			  // 이 방식은 시스템의 Endianness(리틀/빅 엔디안)에 따라 자동으로 바이트 순서가 결정된다.
 			  memcpy(&ack_payload[1], &rpm_value, sizeof(uint16_t));
 		  }
-	      // 3. RF 수신 버퍼에 있는 모든 명령을 처리
+	      // RF 수신 버퍼에 있는 모든 명령을 처리
 		  while (RFHandler_GetNewCommand(&cmd)) {
 
 			  // 수신 성공 시, 구조체에 RF 상태(true)를 기록
 			  cmd.rf_status = true;
 
-	          // 4. 모터 제어 업데이트
+	      // 모터 제어 업데이트
 			  MotorControl_Update(&cmd);
 
-	          // 5. CAN 전송을 위해 수신한 cmd 구조체 전체를 CANTxQueue에 넣음
+	      // CAN 전송을 위해 수신한 cmd 구조체 전체를 CANTxQueue에 넣음
 			  osMessageQueuePut(CANTxQueueHandle, &cmd, 0U, 0U);
 
-	          // 6. 컨트롤러에 보낼 ACK 페이로드 설정 (배열과 크기 전달)
+	      // 컨트롤러에 보낼 ACK 페이로드 설정 (배열과 크기 전달)
 			  // GetNewCommand 함수 내부에서 ACK를 보내므로, 이 함수를 호출한 직후에 ACK 페이로드를 설정해야 다음 ACK에 반영됨 (while loop 내부)
-	          // (가장 최신 CAN 데이터로 매번 ACK 페이로드를 설정)
+	      // (가장 최신 CAN 데이터로 매번 ACK 페이로드를 설정)
 			  RFHandler_SetAckPayload(ack_payload, sizeof(ack_payload));
 		  }
 		}
@@ -215,15 +221,17 @@ void StartRFTask(void *argument)
 
 /* USER CODE BEGIN Header_StartCANTask */
 /**
-* @brief Function implementing the CANTask thread.
-* @param argument: Not used
-* @retval None
+* @brief RFTask로부터 받은 주행 상태를 CAN 버스로 전송하는 태스크
+* @param argument: None
+* @note 이 태스크는 `CANTxQueue`에 데이터가 들어올 때까지 무한정 대기한다.
+* `RFTask`가 큐에 `VehicleCommand_t` 구조체를 넣으면, 이 태스크는 깨어나서
+* 구조체에서 방향, 브레이크, RF 상태 정보를 추출하여 `CAN_Send_DriveStatus` 함수를 통해 전송한다.
 */
 /* USER CODE END Header_StartCANTask */
 void StartCANTask(void *argument)
 {
   /* USER CODE BEGIN StartCANTask */
-	VehicleCommand_t received_cmd; // ⭐️ VehicleCommand_t 타입으로 변경
+	VehicleCommand_t received_cmd;
 
   /* Infinite loop */
   for(;;)
