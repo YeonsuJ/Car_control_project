@@ -23,4 +23,4 @@
 | [`central_v1.5.0`](https://github.com/YeonsuJ/Car_control_project/commit/fb063337c0dd13055ecf7afc8d4cca3d3b347613) | 2025-07-17 | RF 기반 모터 제어 + CAN 초음파 거리 → 조건부 ACK 응답 → 햅틱 제어 연동 (v1.5.0)|
 | [`central_v1.6.0`](https://github.com/YeonsuJ/Car_control_project/commit/f1f14c615f58d526c636ad07ba73be2855ed3e86) | 2025-07-24 | 기능별 파일 분할 및 코드 최적화 + CAN 통신 개선 및 속도 상향(500kbps) (v1.6.0)|
 | [`central_v1.7.0`](https://github.com/YeonsuJ/Car_control_project/commit/c3081ab3b98114f977e82bb3962f7fc1301cce8b) | 2025-08-02 | RF 기반 기어/브레이크 상태 CAN 전송 및 LDR 조건부 전조등/후미등 제어 구현 (v1.7.0)|
-| [`central_v2.0.0`](https://github.com/YeonsuJ/Car_control_project/commit/0227f3efb329d7939411c427968ac695a747d304) | 2025-08-08 | Encoder 센서 sensor부로 위임 및 RTOS 병합완료 (v2.0.0)|
+| [`central_v2.0.0`](https://github.com/YeonsuJ/Car_control_project/commit/785f3c91b83969a0039c02a31b324fe7f5a3fb35) | 2025-08-22 | Central부 RTOS 포팅 및 코드 리팩토링 완료 (v2.0.0)|
