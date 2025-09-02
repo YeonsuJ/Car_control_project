@@ -52,7 +52,7 @@ STM32F103C8T6는 ARM Cortex-M3 코어를 기반으로 72MHz의 충분한 클럭 
 - 조도 센서 : LM393 ldr
 - 기타: LED, 18650 리튬 배터리(3s), XL4015 DC-DC 스텝다운 컨버터, 저항, 로커 스위치
 
-> [자세한 부품 사항](./parts_list.md)
+> [자세한 부품 사항](../parts_list.md)
 
 ---
 
