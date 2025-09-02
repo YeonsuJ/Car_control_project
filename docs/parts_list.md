@@ -3,7 +3,7 @@
 **Board**
 | 품목 | 용도 | 수량 | 이미지 |
 | :------: | :------: |:------: |:------: |
-| STM32F103C8T6 | controller MCU <br> car_central ECU <br> car_status ECU <br> car_sensor ECU |4|<img src="../media/part_list%20images/stm32f103.png" alt="부품 이미지" width="200" />|
+| STM32F103C8T6 | controller MCU <br> car_central ECU <br> car_status ECU <br> car_sensor ECU |4| <img src="../images/part_list/stm32f103.png" alt="부품 이미지" width="200" />|
 <br/>
 
 **Sensor**
