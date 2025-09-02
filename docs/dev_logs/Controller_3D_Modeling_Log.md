@@ -5,10 +5,12 @@
 - 사용 프로그램: Autodesk Inventor
 
 ## 설계도
-![설계도](Basic_Sketch.png)
+![설계도](../images/3d_model/Basic_Sketch.png)
+
 ## 모델링 결과
-![핸들](Steering_Wheel.png)
-![뚜껑](Cap.png)
+![핸들](../images/3d_model/Steering_Wheel.png)
+![뚜껑](../images/3d_model/Cap.png)
+
 ### 아쉬운 점
 모듈 부품의 조립(어셈블리) 과정에서 실제 치수 측정에 어려움이 있었음.  
 이 때문에 모듈 배치 공간을 넉넉하게 잡았다고 생각했으나, 3D 프린팅 출력 후 실제 모듈을 결합해 보니  
