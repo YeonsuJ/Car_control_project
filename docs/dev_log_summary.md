@@ -3,7 +3,7 @@
 ## 1주차 (25-05-12 ~ 25-05-18) 
 |내용|문서 링크|커밋해시|
 |---|:---:|:---:|
-|- 초기 아이디어 구상<br>- 보드 및 부품 선정 후 구매<br>- 마일드스톤 개괄 작성|[Initial_Planning.md](./Initial_Planning.md)|-|
+|- 초기 아이디어 구상<br>- 보드 및 부품 선정 후 구매<br>- 마일드스톤 개괄 작성|[Initial_Planning.md](./dev_logs/Initial_Planning.md)|-|
 
 ---
 
