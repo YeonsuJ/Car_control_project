@@ -219,9 +219,9 @@ HAL_CAN_ConfigFilter(&hcan, &sFilterConfig);
 
 #### Live Expressions Capture
 Tx<br>
-<img src="../images/can_TxData.png" alt="can TxData" width="500"/><br>
+<img src="../images/can_comm_data/can_TxData.png" alt="can TxData" width="500"/><br>
 Rx<br>
-<img src="../images/can_RxData.png" alt="can RxData" width="500"/><br>
+<img src="../images/can_comm_data/can_RxData.png" alt="can RxData" width="500"/><br>
 
 -> "YEOSU-J"라는 데이터가 수신된 것을 확인할 수 있다.
 
@@ -230,9 +230,9 @@ Rx<br>
 - Logic 2 로직 분석기를 통해 CAN 수신 메시지 프레임의 구조를 각 필드별로 시각적으로 확인할 수 있으며, 각 필드의 시작 시간, 지속 시간, 값을 디코딩 된 것도 확인할 수 있다.
 
 Tx<br>
-<img src="../images/can_tx_logic_analyzer_capture.png" alt="can tx capture" width="500"/><br>
+<img src="../images/can_comm_data/can_tx_logic_analyzer_capture.png" alt="can tx capture" width="500"/><br>
 Rx<br>
-<img src="../images/can_rx_logic_analyzer_capture.png" alt="can rx capture" width="500"/><br>
+<img src="../images/can_comm_data/can_rx_logic_analyzer_capture.png" alt="can rx capture" width="500"/><br>
 
 #### 🔸 각 필드의 의미와 역할
 
