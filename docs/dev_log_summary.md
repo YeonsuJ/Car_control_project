@@ -103,7 +103,7 @@
 ## 13주차 (25-08-04 ~ 25-08-10)
 |내용|문서 링크|커밋해시|
 |---|:---:|:---:|
-|핸들 디자인·3D 모델링 및 출력|[00_Modeling_Log.md](../3d_model/00_Modeling_Log.md)|모델링 파일 : [Cap.ipt](../3d_model/Cap.ipt) / [Steering_Wheel.ipt](../3d_model/Steering_Wheel.ipt)|
+|핸들 디자인·3D 모델링 및 출력|[Controller_3D_Modeling_Log.md](../Controller_3D_Modeling_Log.md)|모델링 파일 : [Cap.ipt](../3d_model/Cap.ipt) / [Steering_Wheel.ipt](../3d_model/Steering_Wheel.ipt)|
 |central부 RTOS 포팅 완료|[V2.0.0_Central_Porting_RTOS.md](./V2.0.0_Central_Porting_RTOS.md)|[`central_v2.0.0`](https://github.com/YeonsuJ/Car_control_project/commit/b4040d90dd0db0ba8075e1ecb5af2c03d405105b)|
 |Sensor부 RTOS 포팅 완료|[V2.0.0_Sensor_Porting_RTOS.md](./V2.0.0_Sensor_Porting_RTOS.md)|[`sensor_v2.0.0`](https://github.com/YeonsuJ/Car_control_project/commit/e2be52947bca1ff94aee103a3060253fd54f70a2)|
 |Status부 RTOS 포팅 완료|[V2.0.0_Status_Porting_RTOS.md](./V2.0.0_Status_Porting_RTOS.md)|[`status_v2.0.0`]()|
