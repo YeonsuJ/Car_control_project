@@ -2,7 +2,7 @@
 이 리포지토리는 `핸들링 모션 기반 RC카 네트워크 시스템` 프로젝트의 기획부터 최종 구현까지 모든 개발 과정, 소스 코드, 기술 문서를 기록하는 메인 개발 아카이브입니다.
 
 ## 프로젝트 문서
-프로젝트 개발 과정에서 작성된 모든 문서는 docs 폴더 내에 체계적으로 정리되어 있습니다.
+프로젝트 개발 과정에서 작성된 모든 문서는 develop 브랜치의 `docs` 폴더 내에 체계적으로 정리되어 있습니다.
 ```
 docs/
 ├── 3d_model/           # 컨트롤러 외형 설계 도면
@@ -23,10 +23,10 @@ docs/
 
 - `main` : 최종 안정화 버전의 코드가 병합되는 기본 브랜치 
 - `develop` : 개발 과정에서 작성된 모든 문서를 관리하는 브랜치
-- `Unit_controller` : 컨트롤러 기능 개발 → [[상세 히스토리](https://github.com/YeonsuJ/Car_control_project/tree/Unit_controller/ver_Unit_controller.md)]
-- `Unit_car_central` : 차량 중앙 제어 시스템 개발 → [[상세 히스토리](https://github.com/YeonsuJ/Car_control_project/tree/Unit_car_central/ver_Unit_car_central.md)]
-- `Unit_car_sensor` : 차량 센서 데이터 처리 기능 개발 → [[상세 히스토리](https://github.com/YeonsuJ/Car_control_project/tree/Unit_car_sensor/ver_Unit_car_sensor.md)]
-- `Unit_car_status` : 차량 상태 모니터링 기능 개발 → [[상세 히스토리](https://github.com/YeonsuJ/Car_control_project/tree/Unit_car_status/ver_Unit_car_status.md)]
+- `Unit_controller` : 컨트롤러 유닛 개발 → [[상세 히스토리](https://github.com/YeonsuJ/Car_control_project/tree/Unit_controller/ver_Unit_controller.md)]
+- `Unit_car_central` : 차량 메인 제어 유닛 개발 → [[상세 히스토리](https://github.com/YeonsuJ/Car_control_project/tree/Unit_car_central/ver_Unit_car_central.md)]
+- `Unit_car_sensor` : 차량 센서 제어 유닛 개발 → [[상세 히스토리](https://github.com/YeonsuJ/Car_control_project/tree/Unit_car_sensor/ver_Unit_car_sensor.md)]
+- `Unit_car_status` : 차량 상태 디스플레이 유닛 개발 → [[상세 히스토리](https://github.com/YeonsuJ/Car_control_project/tree/Unit_car_status/ver_Unit_car_status.md)]
 
 
 
