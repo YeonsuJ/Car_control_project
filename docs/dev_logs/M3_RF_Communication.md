@@ -214,9 +214,7 @@ __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, pwm);
 - `HAL_Delay()` 제거, `HAL_GetTick()` 기반 주기 처리 → non-blocking 구조
 - 인터럽트 기반 수신 처리 → 실시간 반응성과 CPU 효율 개선
 
-### 💡 향후 개선 아이디어
-
-- 수신부를 STM32F446RE(M4)로 전환  
+### 💡 향후 개선 아이디어 
 - RTC 및 외부 저장장치(SD 카드 등) 연동하여 조향 및 이벤트 로그 기록  
 - RTOS Task 구조로 확장 가능
 
