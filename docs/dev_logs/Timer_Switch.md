@@ -1,15 +1,15 @@
 # [타이머 인터럽트 기반] 버튼 눌림 시간 측정 및 OLED 출력
 
-## 🎯 프로젝트 개요
+## 프로젝트 개요
 
 본 프로젝트는 STM32F103C8T6 보드에서 **외부 인터럽트와 타이머 인터럽트**를 이용하여 두 개의 버튼 입력 시간(가속/브레이크)을 측정하고, 이를 **I2C 기반 OLED(SSD1306)** 화면에 실시간으로 출력하는 시스템을 구현한다.  
 이를 통해 사용자의 입력 지속 시간(Press Duration)을 시각적으로 모니터링할 수 있으며, 차량 제어 입력 분석, 디버깅, UI 피드백 등에 활용할 수 있다.
 
 ---
 
-## 📖 이론 개요
+## 이론 개요
 
-### ⏱️ 버튼 입력 시간 측정 원리
+### 버튼 입력 시간 측정 원리
 
 1. **외부 인터럽트 (EXTI)**
    - 버튼 핀(PB0: Accel, PB1: Brake)에 입력 변화가 감지되면 인터럽트 발생
@@ -27,7 +27,7 @@
 
 ---
 
-## 🔌 하드웨어 연결
+## 하드웨어 연결
 
 <img src="../wiring_diagram/Debouncing_Switch.png" alt="스위치 회로" width="500"/>
 
@@ -43,7 +43,7 @@
 0.1μF 커패시터 장착 (HW 디바운싱 처리)
 ---
 
-## ⚙️ STM32CubeMX 설정 요약
+## STM32CubeMX 설정 요약
 
 ### GPIO
 - PB0, PB1: EXTI Interrupt (Rising and Falling edge)
@@ -58,7 +58,7 @@
 
 ---
 
-## 💻 주요 코드 설명
+## 주요 코드 설명
 
 ### 외부 인터럽트 핸들러 (HAL_GPIO_EXTI_Callback)
 
@@ -188,7 +188,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 ---
 
-## 📌 요약 흐름도
+## 요약 흐름도
 
 1. **버튼 누름** → EXTI 인터럽트 발생 → `pressed = 1`, `count = 0`
 2. **버튼 유지** → TIM2 인터럽트 20ms마다 `count++`
@@ -197,7 +197,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 ---
 
-## 💡 확장 아이디어
+## 확장 아이디어
 - 버튼 누름 시간에 따라 모터 제어
 - OLED 그래픽 막대(Progress Bar)로 시각화
 - FreeRTOS 적용 시 Task로 측정 로직 분리
