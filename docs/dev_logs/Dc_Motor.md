@@ -102,10 +102,10 @@ L298N은 일반적으로 2kHz ~ 5kHz 사이의 PWM 주파수에서 안정적으�
 
 <img src="../wiring_diagram/dc_motor.png" alt="DC모터 결선도" width="500"/>
 
-|외부전원(5V)|L298N|F446RE보드|DC모터|
+|외부전원|L298N|F103보드|DC모터|
 |:---:|:---:|:---:|:---:|
 |+12V|+12v|||
-|Gnd|Gnd|Gnd|encoder Gnd(black)|
+|Gnd|Gnd|Gnd|-|
 ||Out1||Motor-(white)|
 ||Out2||Motor+(red)|
 ||IN1|PA0||
