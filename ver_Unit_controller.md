@@ -23,3 +23,4 @@
 | [`controller_v1.6.0`](https://github.com/YeonsuJ/Car_control_project/commit/033420c3bb7774f772402cf7f1a2d00c62ac3682) | 2025-07-24 | 파일 분할 및 코드 최적화 완료 (v1.6.0) |
 | [`controller_v2.0.0`](https://github.com/YeonsuJ/Car_control_project/commit/48f5d81bfadd766953063530f16cc98a43dc841b) | 2025-07-30 | FreeRTOS 포팅 완료 (v2.0.0) |
 | [`controller_v2.1.0`](https://github.com/YeonsuJ/Car_control_project/commit/3e5ac7c62e8d069a8c2efefaed725b6cf0ba4c33) | 2025-08-25 | OLED 디스플레이 태스크 생성 및 코드 최적화 완료 (v2.1.0) |
+| [`controller_v2.1.0`](https://github.com/YeonsuJ/Car_control_project/commit/d0602d02236190beffc51e91d928c0040a883730) | 2025-09-02 | 코드 리팩토링 완료 (v2.2.0) |
