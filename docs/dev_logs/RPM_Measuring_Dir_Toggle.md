@@ -20,18 +20,18 @@
 ---
 
 ## 하드웨어 연결
+- 센서부 Encoder 연결도<br>
+    <img src="../wiring_diagram/rpm_measuring.png" alt="RPM 측정 배선도" width="500"/>
+- 컨트롤러부 토글스위치 연결도<br>
+    <img src="../wiring_diagram/motor_direction_switch.png" alt="토글스위치 모터방향 제어 배선도" width="500"/>
 
-<img src="../wiring_diagram/rpm_measuring.png" alt="RPM 측정 배선도" width="700"/>
-
-<img src="../wiring_diagram/motor_direction_switch.png" alt="토글스위치 모터방향 제어 배선도" width="700"/>
-
-<Sensor>
+### Sensor
 - Encoder +5v (blue)
 - Encoder Gnd(black)
 - Encoder Signal A (yellow) : PA8 (TIM1_CH1)
 encoder signal B(green) : PA9 (TIM1_CH2)
 
-<Controller>
+### Controller
 - PB9(Motor_Forward) : GPIO_Input
 - PB8(Motor_Backward) : GPIO_Input
 - Middle Pin : GND
@@ -40,7 +40,7 @@ encoder signal B(green) : PA9 (TIM1_CH2)
 
 ## STM32CubeMX 설정
 
-<Sensor>
+### Sensor
 Sensor ECU: TIM1 설정 - Encoder Mode
 - Combined Channels: Encoder Mode
 - Configuration > Parameter Settings
@@ -55,7 +55,7 @@ Encoder Input Configuration
 #### IC1/IC2의 Input Filter란?
 엔코더 신호에 포함된 전기적 노이즈로 인한 잘못된 펄스 감지를 방지하는 디지털 필터 기능이다. 고속 회전이나 긴 배선으로 노이즈가 유입되면 RPM 값이 튀거나 제어가 불안정해질 수 있는데, 필터 값을 높이면 노이즈 제거에 효과적이다. (0~15 설정 가능)
 
-<Controller>
+### Controller
 - B8, PB9 핀 설정
     - Mode: Input
     - Pull-up/Pull-down: Pull-up (스위치가 연결되지 않았을 때 기본 상태를 HIGH로 유지)
@@ -144,7 +144,7 @@ void Update_Motor_RPM(void)
 
 --- 
 
-## 💡 향후 확장 및 개선 아이디어
+## 향후 확장 및 개선 아이디어
 
 - Sensor ECU: 현재 RPM 측정에 사용된 저주파 통과 필터의 계수(RPM_FILTER_ALPHA)를 주행 환경에 따라 동적으로 조절하여 반응성과 안정성 사이의 균형을 최적화하는 방안을 연구할 수 있다.
 
