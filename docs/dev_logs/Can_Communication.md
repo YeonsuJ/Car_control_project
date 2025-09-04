@@ -1,9 +1,9 @@
 #  CAN 통신 송/수신 초기 기능 구현
 
-## 🎯 프로젝트 활용 방안
+## 프로젝트 활용 방안
 CAN 통신은 본 프로젝트에서 다수의 마이크로컨트롤러 간 신뢰성 높은 데이터 교환을 위해 핵심적으로 활용된다. 현재 차량의 센서부에서 측정한 전·후방 초음파 센서 거리 데이터는, RF 통신을 통해 핸들부로 전송되기 전에 RF 송·수신 모듈이 탑재된 중앙제어부로 먼저 전달되어야 하며, 이 과정에서 CAN 통신이 사용된다. 또한 CAN의 브로드캐스트 특성을 활용하면, 향후 배터리 모니터링, 온도 센서 등 다양한 모듈을 추가하더라도 동일한 버스 상에서 통신 인프라를 확장성 있게 유지할 수 있다. 따라서 CAN 통신은 이 프로젝트에서 모듈 간의 분산제어 구조와 실시간 반응성을 확보하기 위한 필수 요소로 작용한다.
 
-## 📖 이론 개요
+## 이론 개요
 ### CAN 통신이란?
 CAN(Controller Area Network) 통신은 차량 내부의 전자 제어 장치들(ECU) 간 고속·고신뢰성 데이터 전송을 위해 개발된 직렬 통신 프로토콜이다. 독일 Bosch사가 1980년대에 개발했으며, 현재는 자동차뿐만 아니라 산업 자동화, 의료기기, 로봇 시스템 등 다양한 임베디드 시스템에 널리 사용되고 있다.
 
@@ -41,7 +41,7 @@ CAN(Controller Area Network) 통신은 차량 내부의 전자 제어 장치들(
 
 ---
 
-## 🔌 하드웨어 연결
+## 하드웨어 연결
 
 <img src="../wiring_diagram/can_comm.png" alt="can통신 기본 배선도" width="500"/>
 
@@ -77,7 +77,7 @@ CAN 통신은 차동 신호 방식(differential signaling)을 사용하기 때�
 
 ---
 
-## ⚙️ STM32CubeMX 설정
+## STM32CubeMX 설정
 
 ### < Tx, Rx 공통 >
 - Connectivity > CAN > Mode > Activated
@@ -100,7 +100,7 @@ CAN 통신은 차동 신호 방식(differential signaling)을 사용하기 때�
 
 ---
 
-## 💻 동작 코드
+## 동작 코드
 
 ### 1. 송신부(Tx)
 
@@ -173,7 +173,7 @@ HAL_CAN_ConfigFilter(&hcan, &sFilterConfig); // 필터 설정 적용
 HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO1_MSG_PENDING);
 ```
 
-#### 🔸 can filter란?
+#### can filter란?
 CAN 필터는 수신부(MCU)가 CAN 버스를 통해 들어오는 수많은 메시지 중에서 원하는 ID의 메시지만 선별적으로 수신할 수 있도록 해주는 하드웨어 기반 필터링 기능이다. CAN 컨트롤러 내부에 존재하며, 필터 설정에 따라 특정 ID만 수신 FIFO로 통과시킴으로써 MCU가 불필요한 메시지를 처리하지 않도록 한다.
 
 목적
@@ -234,7 +234,7 @@ Tx<br>
 Rx<br>
 <img src="../images/can_comm_data/can_rx_logic_analyzer_capture.png" alt="can rx capture" width="500"/><br>
 
-#### 🔸 각 필드의 의미와 역할
+#### 각 필드의 의미와 역할
 
 - 1. Identifier (식별자 필드)
     - 역할: 메시지의 ID를 나타냄. 각 메시지는 이 ID를 통해 우선순위가 정해지고, 수신 측에서는 필터링에 사용됨.
@@ -262,7 +262,7 @@ Rx<br>
     → 수신 측(Rx)에서 이 프레임을 정상적으로 수신했음을 의미하며, 송신 측에서는 다음 메시지를 보낼 준비가 가능해짐.
 ---
 
-## 💡 향후 확장 및 개선 아이디어
+## 향후 확장 및 개선 아이디어
 - CAN 기반 센서부에서 측정된 초음파 거리값 환산 데이터 -> 차량부 햅틱 제어 (향후 RF로 차량부에서 핸들부로 전송예정)
 - CAN timing parameter 중 prescaler 값을 조정하여 기존보다 빠른 500kbps 고속 CAN 통신을 구현, 통신 지연 최소화 및 실시간성 향상
 - FreeRTOS 기반 CAN 통신 모듈화 및 태스크 분리
