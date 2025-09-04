@@ -1,4 +1,4 @@
-# 핸들 컨트롤러 유닛
+# 컨트롤러 유닛
 ## 모듈 테스트 히스토리
 | 커밋해시값 | 날짜         | 변경 내용 |
 |----------|--------------|-----------|
@@ -9,8 +9,8 @@
 | [`7dc0c12`](https://github.com/YeonsuJ/Car_control_project/commit/7dc0c1298043c86b4969e85140554ca7ac16d90a) | 2025-06-02 | 자이로센서 & 서보모터 통합 완료 / Roll -> PWM duty 매핑 |
 | [`b8b10c7`](https://github.com/YeonsuJ/Car_control_project/commit/b8b10c700b9ac08d53d55301592650528b12d3e5) | 2025-06-03 | 시스템 클럭 8MHz -> 72MHz 변경 및 pwm duty 매핑값 수정 완료 |
 | [`7dcde54`](https://github.com/YeonsuJ/Car_control_project/commit/7dcde5411003d99339164ecea6fa701451369387) | 2025-06-04 | 버튼 눌림 시간 측정 로직 구현 |
-| [`aa66fe2`](https://github.com/YeonsuJ/Car_control_project/commit/aa66fe253add85bcfb8b014cf14e35eefbc83c1f) | 2025-06-25 | RF 통신 test 코드 구현 (스위치 기반 LED 토글) |
-| [`TX`](https://github.com/YeonsuJ/Car_control_project/commit/10d20e17b70717359006c2cbe5c9e67530bd7970) / [`RX`](https://github.com/YeonsuJ/Car_control_project/commit/799207cc3245699651659109fc4b86ea6055f698)| 2025-06-25 | RF 통신 -> roll 값 송수신 및 서보모터 제어 구현 |
+| [`aa66fe2`](https://github.com/YeonsuJ/Car_control_project/commit/aa66fe253add85bcfb8b014cf14e35eefbc83c1f) | 2025-06-12 | RF 통신 test 코드 구현 (스위치 기반 LED 토글) |
+| [`TX`](https://github.com/YeonsuJ/Car_control_project/commit/10d20e17b70717359006c2cbe5c9e67530bd7970) / [`RX`](https://github.com/YeonsuJ/Car_control_project/commit/799207cc3245699651659109fc4b86ea6055f698)| 2025-06-16 | RF 통신 -> roll 값 송수신 및 서보모터 제어 구현 |
 | [`TX`](https://github.com/YeonsuJ/Car_control_project/commit/88aaa169f57b4323f77507a8af936f329d8cdfcc) / [`RX`](https://github.com/YeonsuJ/Car_control_project/commit/cbc18035c71e6f3c50977fd6d9abb157786e36d2) | 2025-06-25 |RF 통신 -> roll, acc, brk 송수신 구현|
 
 
@@ -22,5 +22,5 @@
 | [`controller_v1.5.0`](https://github.com/YeonsuJ/Car_control_project/commit/0745e3354e6c7a4ae12c31953c2b0a166a373d1a) | 2025-07-17 | ACK Payload 기반 RF 통신 구현 및 통합 완료 (v1.5.0) |
 | [`controller_v1.6.0`](https://github.com/YeonsuJ/Car_control_project/commit/033420c3bb7774f772402cf7f1a2d00c62ac3682) | 2025-07-24 | 파일 분할 및 코드 최적화 완료 (v1.6.0) |
 | [`controller_v2.0.0`](https://github.com/YeonsuJ/Car_control_project/commit/48f5d81bfadd766953063530f16cc98a43dc841b) | 2025-07-30 | FreeRTOS 포팅 완료 (v2.0.0) |
-| [`controller_v2.1.0`](https://github.com/YeonsuJ/Car_control_project/commit/3e5ac7c62e8d069a8c2efefaed725b6cf0ba4c33) | 2025-08-25 | OLED 디스플레이 태스크 생성 및 코드 최적화 완료 (v2.1.0) |
-| [`controller_v2.1.0`](https://github.com/YeonsuJ/Car_control_project/commit/d0602d02236190beffc51e91d928c0040a883730) | 2025-09-02 | 코드 리팩토링 완료 (v2.2.0) |
+| [`controller_v2.1.0`](https://github.com/YeonsuJ/Car_control_project/commit/3e5ac7c62e8d069a8c2efefaed725b6cf0ba4c33) | 2025-08-11 | OLED 디스플레이 태스크 생성 및 코드 최적화 완료 (v2.1.0) |
+| [`controller_v2.2.0`](https://github.com/YeonsuJ/Car_control_project/commit/d0602d02236190beffc51e91d928c0040a883730) | 2025-08-17 | 코드 리팩토링 완료 (v2.2.0) |
